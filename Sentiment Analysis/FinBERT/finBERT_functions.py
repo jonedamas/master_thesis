@@ -32,8 +32,6 @@ def get_sentiment(sentence_list: list[str]):
 
     outputs = finbert(**inputs)[0]
 
-    labels = {0:'neutral', 1:'positive', 2:'negative'}
-
     res = {}
 
     for i, sentence in enumerate(sentence_list):
