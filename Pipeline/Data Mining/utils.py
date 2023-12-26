@@ -39,8 +39,6 @@ def create_news_df(url_list: list) -> pd.DataFrame:
             article.download()
             article.parse()
 
-            # get datetime
-            info_dict['date'].append(article.publish_date)
             info_dict['title'].append(article.title)
             info_dict['text'].append(article.text)
             info_dict['url'].append(URL)
