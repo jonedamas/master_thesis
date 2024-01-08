@@ -31,6 +31,7 @@ def create_news_df(url_list: list) -> pd.DataFrame:
         'title': [], # Title of the article
         'text': [], # Text of the article
         'url': [], # URL of the article
+        'date': [] # Date of the article
     }
 
     for URL in tqdm(url_list):
@@ -42,6 +43,7 @@ def create_news_df(url_list: list) -> pd.DataFrame:
             info_dict['title'].append(article.title)
             info_dict['text'].append(article.text)
             info_dict['url'].append(URL)
+            info_dict['date'].append(article.publish_date)
         except:
             continue
 
