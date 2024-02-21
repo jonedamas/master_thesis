@@ -1,5 +1,14 @@
 # Master Thesis Repository
 
+## Repository structure
+
+### src
+This folder contains the source code of the project. 
+
+
+### unused
+This folder contains the unused code of the project.
+
 ## Usefull articles
 
 #### Volatility spillover
