@@ -1,3 +1,4 @@
 *.csv
-*.txt
+__pycache__/
+API_KEY.txt
 theguardian/
