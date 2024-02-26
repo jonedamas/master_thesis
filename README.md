@@ -5,6 +5,14 @@
 ### src
 This folder contains the source code of the project.
 
+- #### Data Analysis
+
+- #### Plotting
+
+- #### Sentiment Analysis
+
+- #### Volatility Forecasting
+
 ### data
 This folder contains the data used in the project.
 
