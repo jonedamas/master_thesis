@@ -18,6 +18,6 @@ def save_path(
     repo_root = subprocess.check_output("git rev-parse --show-toplevel", shell=True).decode('utf-8').strip()
     save_path = os.path.join(repo_root, relative_path, filename)
 
-    return save_path 
+    return save_path
 
 
