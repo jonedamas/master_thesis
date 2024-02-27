@@ -3,3 +3,5 @@ __pycache__/
 API_KEY.txt
 theguardian/
 SeaNMF/
+.vscode/
+.metals/
