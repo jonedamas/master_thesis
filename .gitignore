@@ -1,7 +1,10 @@
 *.csv
 __pycache__/
-API_KEY.txt
 theguardian/
 SeaNMF/
 .vscode/
 .metals/
+
+# API keys
+NYT_API_KEY.txt
+TG_API_KEY.txt
