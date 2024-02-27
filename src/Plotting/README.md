@@ -5,4 +5,8 @@
 
 ## News frequency
 
+### The Guardian
 ![News frequency](images/TG_news_freq.png)
+
+### The New York Times
+![News frequency](images/NYT_news_freq.png)
