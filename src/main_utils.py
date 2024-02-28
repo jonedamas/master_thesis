@@ -26,7 +26,7 @@ def load_news_df(
         path: str
     ) -> pd.DataFrame:
     '''
-    Loads a news DataFrame from the repository.
+    Loads a news DataFrame from the repository and setting index to datetime.
 
     Args:
         path (str): The relative path to the news DataFrame.
