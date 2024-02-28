@@ -3,13 +3,16 @@
 The news data should be in an equal format from all sources for easy combination and comparison.
 
 - article_id: The unique identifier for the article
-    - Type: String
+    - **Type:** String
 
 - headline: The title of the article
-    - Type: String
+    - **Type:** String
 
-- pub_date: The date the article was published
-    - Type: Datetime64[ns]: `YYYY-MM-DD hh:mm:ss`
+- datetime: The date and time the article was published
+    - **Type:** Datetime64[ns]: `YYYY-MM-DD hh:mm:ss`
+
+- web_url: The url to the news article
+    - **Type:** String
 
 ## The New York Times Developer API
 
