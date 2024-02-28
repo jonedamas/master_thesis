@@ -1,8 +1,9 @@
 import os
 import subprocess
+import pandas as pd
 
 def save_path(
-        relative_path: str, 
+        relative_path: str,
         filename: str
     ) -> str:
     '''
@@ -11,7 +12,7 @@ def save_path(
     Args:
         relative_path (str): The relative path to the file.
         filename (str): The name of the file.
-    
+
     Returns:
         str: The absolute path to save the file.
     '''
@@ -21,3 +22,20 @@ def save_path(
     return save_path
 
 
+def load_news_df(
+        path: str
+    ) -> pd.DataFrame:
+    '''
+    Loads a news DataFrame from the repository.
+
+    Args:
+        path (str): The relative path to the news DataFrame.
+
+    Returns:
+        pd.DataFrame: The news DataFrame.
+    '''
+    df = pd.read_csv(fr'C:\Users\joneh\master_thesis\data\news\{path}')
+    df.index = pd.to_datetime(df['datetime']).dt.tz_localize(None)
+    df.drop(columns=['datetime'], inplace=True)
+
+    return df
