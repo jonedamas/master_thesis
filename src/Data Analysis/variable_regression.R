@@ -1,5 +1,5 @@
 
-url <- "C://Users/joneh/master_thesis/data/regression/combined_df_NYT.csv"
+url <- "C://Users/joneh/master_thesis/data/regression_input/combined_df_NYT.csv"
 
 data <- read.csv(url)
 
