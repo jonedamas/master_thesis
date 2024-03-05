@@ -22,8 +22,9 @@ def save_path(
     return save_path
 
 
-def load_news_df(
-        path: str
+def load_df(
+        data_folder: str,
+        filename: str
     ) -> pd.DataFrame:
     '''
     Loads a news DataFrame from the repository and setting index to datetime.
@@ -34,7 +35,7 @@ def load_news_df(
     Returns:
         pd.DataFrame: The news DataFrame.
     '''
-    df = pd.read_csv(fr'C:\Users\joneh\master_thesis\data\news\{path}')
+    df = pd.read_csv(fr'C:\Users\joneh\master_thesis\data\{data_folder}\{filename}')
     df.index = pd.to_datetime(df['datetime']).dt.tz_localize(None)
     df.drop(columns=['datetime'], inplace=True)
 
