@@ -1,5 +1,6 @@
+using ARCHModels
 
-function sent_index(scores::Vector{Float64})::Vector{Float64}
+function sent_index(scores::Vector{Float64}, β::Float64)::Vector{Float64}
     # create docstring
     """
     Calculate the sentiment index of a document using the sentiment scores of the sentences.
@@ -20,7 +21,7 @@ function sent_index(scores::Vector{Float64})::Vector{Float64}
     for t in 1:length(scores)
         SV = scores[t]
         for i in 1:(t - 1)
-            SV += scores[i] * exp(-(t-i)/7.0)
+            SV += scores[i] * exp(-(t-i)/β)
         end
         sent_index[t] = SV
     end

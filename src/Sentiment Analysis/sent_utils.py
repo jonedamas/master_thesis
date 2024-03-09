@@ -18,7 +18,7 @@ def aggregate_score(df: pd.DataFrame, colnames: List[str], frequency: str = 'D')
     return  resampled_df
 
 
-def textblob_sentiment_df(df: pd.DataFrame, index_function, frequency: str = 'D') -> pd.DataFrame:
+def textblob_sentiment_df(df: pd.DataFrame, index_function, beta: float, frequency: str = 'D') -> pd.DataFrame:
     """
     Returns a dataframe with the sentiment scores of the given dataframe
 
@@ -34,6 +34,6 @@ def textblob_sentiment_df(df: pd.DataFrame, index_function, frequency: str = 'D'
 
     sent_df = aggregate_score(df, ['polarity', 'subjectivity'], frequency=frequency)
 
-    sent_df['SV'] = index_function(list(sent_df['polarity'].values))
+    sent_df['SV'] = index_function(list(sent_df['polarity'].values), beta)
 
     return sent_df
