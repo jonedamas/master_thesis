@@ -1,6 +1,23 @@
 import pandas as pd
+import json
 from matplotlib import pyplot as plt
 import matplotlib.dates as mdates
+from typing import Dict
+
+def load_json(file_path: str) -> Dict[str, str]:
+    '''Loads a JSON file as dictionary.
+
+    Args:
+        file_path: str
+            The path to the JSON file.
+
+    Returns:
+
+    '''
+    with open(file_path, 'r') as file:
+        dictionary = json.load(file)
+
+    return dictionary
 
 def plot_news_frequency(
         df: pd.DataFrame,

@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
+from typing import List
 
 from IPython.display import display, Markdown
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -48,6 +49,22 @@ class NewsCluster:
         for cluster in np.unique(self.clusters):
             display(Markdown(f"**Cluster {cluster}**"))
             display(self.df[self.df['cluster'] == cluster]['headline'])
+
+
+    def remove_cluster(self, clusters: List[int]):
+        '''Removes a cluster from the DataFrame and returns the cleaned DataFrame
+
+        Args:
+            clusters: List of cluster numbers to remove
+
+        Returns:
+            clean_df: DataFrame with the specified clusters removed
+        '''
+        clean_df = self.df[~self.df['cluster'].isin(clusters)]
+
+        print(f'Removed {len(self.df) - len(clean_df)} articles.')
+
+        return clean_df
 
 
     def plot_clusters(self) -> tuple[plt.Figure, plt.Axes]:
