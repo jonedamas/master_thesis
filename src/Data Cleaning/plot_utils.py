@@ -4,25 +4,12 @@ from matplotlib import pyplot as plt
 import matplotlib.dates as mdates
 from typing import Dict
 
-def load_json(file_path: str) -> Dict[str, str]:
-    '''Loads a JSON file as dictionary.
-
-    Args:
-        file_path: str
-            The path to the JSON file.
-
-    Returns:
-
-    '''
-    with open(file_path, 'r') as file:
-        dictionary = json.load(file)
-
-    return dictionary
 
 def plot_news_frequency(
         df: pd.DataFrame,
         title: str,
         frequency: str = 'Q',
+        **kwargs: Dict[str, str]
     ) -> plt.Figure:
     '''Plots the frequency of news articles over time. The frequency is aggregated by quarter.
 
@@ -40,14 +27,14 @@ def plot_news_frequency(
             A matplotlib figure object containing the plot.
     '''
 
-    fig, ax = plt.subplots(figsize=(10, 5), dpi=200)
+    fig, ax = plt.subplots(figsize=(10, 4), dpi=200)
 
     plt.rcParams['font.family'] = 'Arial'
 
     df['count'] = 1
     frequency = df['count'].resample(frequency).sum()
 
-    ax.bar(frequency.index, frequency.values, width=75, color='firebrick')
+    ax.bar(frequency.index, frequency.values, width=75, **kwargs)
 
     ax.set_title(title, fontsize=13)
     ax.set_xlabel('Date', fontsize=13)
