@@ -8,10 +8,17 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.decomposition import PCA
 from sklearn.cluster import DBSCAN
 
+import sys
+
+sys.path.insert(0, r'c:\Users\joneh\master_thesis\src')
+from main_utils import *
+
+
 class NewsCluster:
     def __init__(
             self,
             df: pd.DataFrame,
+            tag: str,
             pca_components: int = 2,
             eps: float = 0.03
         ):
@@ -28,6 +35,9 @@ class NewsCluster:
         self.df = df.dropna()
         self.pca_components = pca_components
         self.eps = eps  # DBSCAN epsilon
+        self.tag = tag
+
+        self.info = load_json(r'C:\Users\joneh\master_thesis\src\plot_dict.json')
 
         self.documents = self.df['headline'].tolist()
 
@@ -46,6 +56,8 @@ class NewsCluster:
     def print_clusters(self):
         '''Prints the news headlines in each cluster
         '''
+        display(Markdown(f"## {self.info[self.tag]['fullname']} Clusters:"))
+
         for cluster in np.unique(self.clusters):
             display(Markdown(f"**Cluster {cluster}**"))
             display(self.df[self.df['cluster'] == cluster]['headline'])
@@ -73,7 +85,6 @@ class NewsCluster:
         Returns:
             fig, ax: Matplotlib Figure and Axes objects
         '''
-
         fig, ax = plt.subplots(figsize=(7, 5), dpi=200)
         ax.set_axisbelow(True)
         ax.grid(alpha=0.25, linestyle='--')
@@ -87,7 +98,7 @@ class NewsCluster:
             s = 35
         )
 
-        ax.set_title("TF-IDF Clustering with PCA and DBSCAN")
+        ax.set_title(f"{self.info[self.tag]['fullname']} news clusters")
         ax.set_xlabel("PCA Dimension 1")
         ax.set_ylabel("PCA Dimension 2")
 
