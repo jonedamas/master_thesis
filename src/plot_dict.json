@@ -1,0 +1,12 @@
+{
+    "NYT":
+    {
+        "fullname": "The New York Times",
+        "color": "steelblue"
+    },
+    "TG":
+    {
+        "fullname": "The Guardian",
+        "color": "palevioletred"
+    }
+}

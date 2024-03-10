@@ -1,6 +1,8 @@
 import os
 import subprocess
 import pandas as pd
+import json
+from typing import Dict
 
 def save_path(
         relative_path: str,
@@ -40,3 +42,19 @@ def load_df(
     df.drop(columns=['datetime'], inplace=True)
 
     return df
+
+def load_json(file_path: str) -> Dict[str, str]:
+    '''Loads a JSON file as dictionary.
+
+    Args:
+        file_path: str
+            The path to the JSON file.
+
+    Returns:
+        dictionary: Dict[str, str]
+            The JSON file as dictionary.
+    '''
+    with open(file_path, 'r') as file:
+        dictionary = json.load(file)
+
+    return dictionary

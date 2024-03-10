@@ -14,6 +14,9 @@ The news data should be in an equal format from all sources for easy combination
 - web_url: The url to the news article
     - **Type:** String
 
+- source: The source of the news article
+    - **Type:** String
+
 ## The New York Times Developer API
 
 The New York Times Developer Network provides access to the Times' articles, blog posts, movie reviews, and more. You can get an API key here: [The New York Times Developer API](https://developer.nytimes.com/)

@@ -85,23 +85,3 @@ def SI_bai(
     sent_series = Main.SI_bai(sent_series.to_list(), beta)
 
     return sent_series
-
-
-def SI_jone(
-        sent_series: pd.Series,
-        beta: float,
-        lambda_: float
-    ) -> pd.Series:
-    """
-    Returns the sentiment index of the given sentiment series
-
-    Args:
-        sent_series: pd.Series
-        beta: float
-
-    Returns:
-        pd.Series
-    """
-    sent_series = Main.SI_jone(sent_series.to_list(), beta, lambda_)
-
-    return sent_series
