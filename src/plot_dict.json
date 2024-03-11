@@ -8,5 +8,10 @@
     {
         "fullname": "The Guardian",
         "color": "palevioletred"
+    },
+    "NG":
+    {
+        "fullname": "Natural Gas",
+        "color": "darkorange"
     }
 }

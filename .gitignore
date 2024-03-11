@@ -6,3 +6,5 @@ SeaNMF/
 .metals/
 
 API_keys/
+
+BERT_tuning/
