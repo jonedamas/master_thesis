@@ -24,10 +24,17 @@ def aggregate_score(
         df: pd.DataFrame
         colnames: list[str]
 
+    KwArgs:
+        frequency: str
+
     Returns:
         pd.DataFrame
     """
     resampled_df = df[colnames].resample(frequency).mean().dropna()
+
+    date_range = pd.date_range(start=resampled_df.index.min(), end=resampled_df.index.max(), freq='D')
+
+    resampled_df = resampled_df.reindex(date_range, fill_value=0)
 
     return  resampled_df
 
