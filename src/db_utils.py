@@ -3,6 +3,11 @@ from sqlalchemy import create_engine
 from IPython.display import Markdown
 from tabulate import tabulate
 
+db_description = {
+    'news': 'Unaltered news articles, gathered by news article APIs.',
+    'news_filtered': 'Filtered news articles through NaN removal, clustering and duplicate removal.',
+}
+
 
 def news_db_commit(df: pd.DataFrame, table: str):
     '''Commits new entries to the news database.
@@ -65,6 +70,8 @@ def db_info(show_table: bool = False) -> Markdown | None:
 
             output_string += f'## {table}\n\n'
 
+            output_string += f'{db_description[table]}\n\n'
+
             # get the number of rows in the table
             query = f"SELECT COUNT(*) FROM {table}"
             num_rows = pd.read_sql(query, engine).iloc[0, 0]
@@ -95,5 +102,5 @@ def db_info(show_table: bool = False) -> Markdown | None:
             return None
 
 if __name__ == "__main__":
-    db_info()
+    db_info(show_table=True)
     print("Markdown file overwritten.")
