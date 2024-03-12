@@ -5,19 +5,23 @@
 ### src
 This folder contains the source code of the project.
 
-- #### Data Analysis
+- #### Data Gathering
 
-- #### Plotting
+- #### Data Cleaning
 
 - #### Sentiment Analysis
+
+- #### TSA
+
+- #### Feature Engineering
 
 - #### Volatility Forecasting
 
 ### data
-This folder contains the data used in the project.
+This folder contains the data used in the project, including the database.
 
-### unused
-This folder contains the unused code of the project.
+### BERT_tuning
+This folder contains the code used to fine-tune the FinBERT model.
 
 ## Usefull articles
 

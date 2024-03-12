@@ -1,9 +1,11 @@
 from julia import Main
 
 import pandas as pd
+from typing import List
+
 import torch.nn.functional as F
 import torch
-from typing import List
+from nltk.tokenize import sent_tokenize
 from textblob import TextBlob
 from transformers import BertTokenizer, BertForSequenceClassification
 
