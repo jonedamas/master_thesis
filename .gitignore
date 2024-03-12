@@ -7,4 +7,5 @@ SeaNMF/
 
 API_keys/
 
-BERT_tuning/temp
+BERT_tuning/temp/
+BERT_tuning/models/
