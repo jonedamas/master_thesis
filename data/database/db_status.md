@@ -1,9 +1,8 @@
-## Number of rows in News df: **7164**
+# Database Status
 
-| article_id                                                                                                            | headline                                                                                             | web_url                                                                                                                                           | source   |
-|:----------------------------------------------------------------------------------------------------------------------|:-----------------------------------------------------------------------------------------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------|:---------|
-| business/2023/dec/31/smiles-all-round-as-financial-markets-end-2023-on-an-unexpected-high                             | Smiles all round as financial markets end 2023 on an unexpected high                                 | https://www.theguardian.com/business/2023/dec/31/smiles-all-round-as-financial-markets-end-2023-on-an-unexpected-high                             | TG       |
-| business/live/2023/dec/28/pound-dollar-uk-economy-predicted-to-turn-corner-2024-ftse-stock-markets-business-live      | UK dealmaking shrinks in 2023, but economy predicted to ‘turn corner’ in 2024 – as it happened       | https://www.theguardian.com/business/live/2023/dec/28/pound-dollar-uk-economy-predicted-to-turn-corner-2024-ftse-stock-markets-business-live      | TG       |
-| business/live/2023/dec/27/stock-markets-santa-rally-soft-landing-hopes-ftse-100-wall-street-business-live             | New York Times accuses ChatGPT maker OpenAI and Microsoft of copyright infringement – as it happened | https://www.theguardian.com/business/live/2023/dec/27/stock-markets-santa-rally-soft-landing-hopes-ftse-100-wall-street-business-live             | TG       |
-| global-development/2023/dec/27/uruguays-green-power-revolution-rapid-shift-to-wind-shows-the-world-how-its-done       | Uruguay’s green power revolution: rapid shift to wind shows the world how it’s done                  | https://www.theguardian.com/global-development/2023/dec/27/uruguays-green-power-revolution-rapid-shift-to-wind-shows-the-world-how-its-done       | TG       |
-| world/2023/dec/24/us-says-it-shot-down-four-drones-in-southern-red-sea-launched-from-houthi-controlled-areas-in-yemen | US says it shot down four drones in southern Red Sea launched from Houthi-controlled areas in Yemen  | https://www.theguardian.com/world/2023/dec/24/us-says-it-shot-down-four-drones-in-southern-red-sea-launched-from-houthi-controlled-areas-in-yemen | TG       |
+## news
+
+Number of rows: **0**.
+
+| article_id   | headline   | web_url   | source   |
+|--------------|------------|-----------|----------|
