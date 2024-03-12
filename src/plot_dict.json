@@ -1,17 +1,17 @@
 {
-    "NYT":
+    "NYT_CrudeANDOil":
     {
-        "fullname": "The New York Times",
+        "fullname": "The New York Times, Crude Oil",
         "color": "steelblue"
     },
-    "TG":
+    "TG_CrudeANDOil":
     {
-        "fullname": "The Guardian",
+        "fullname": "The Guardian, Crude Oil",
         "color": "palevioletred"
     },
-    "NG":
+    "TG_NaturalANDGas":
     {
-        "fullname": "Natural Gas",
+        "fullname": "The Guardian, Natural Gas",
         "color": "darkorange"
     }
 }
