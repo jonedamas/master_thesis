@@ -91,6 +91,6 @@ def SI_bai(
     Returns:
         pd.Series
     """
-    sent_series = Main.SI_bai(sent_series.to_list(), beta)
+    sent_series = Main.SI_bai(sent_series.to_list(), float(beta))
 
     return sent_series
