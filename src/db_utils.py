@@ -9,7 +9,7 @@ db_description = {
 }
 
 
-def news_db_commit(df: pd.DataFrame, table: str):
+def news_db_commit(df: pd.DataFrame, table: str) -> None:
     '''Commits new entries to the news database.
 
     Args:

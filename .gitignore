@@ -5,7 +5,7 @@ SeaNMF/
 .vscode/
 .metals/
 
-API_keys/
+.env
 
 BERT_tuning/temp/
 BERT_tuning/models/

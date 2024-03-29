@@ -53,7 +53,7 @@ class NewsCluster:
         self.df['cluster'] = self.clusters
 
 
-    def print_clusters(self):
+    def print_clusters(self) -> None:
         '''Prints the news headlines in each cluster
         '''
         display(Markdown(f"## {self.info[self.tag]['fullname']} Clusters:"))
@@ -63,7 +63,7 @@ class NewsCluster:
             display(self.df[self.df['cluster'] == cluster]['headline'])
 
 
-    def remove_cluster(self, clusters: List[int]):
+    def remove_cluster(self, clusters: List[int]) -> pd.DataFrame:
         '''Removes a cluster from the DataFrame and returns the cleaned DataFrame
 
         Args:
