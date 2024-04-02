@@ -33,13 +33,13 @@ def news_db_commit(df: pd.DataFrame, table: str) -> None:
         print("No new entries to add to the database.")
 
 
-def news_db_load(table: str, dt_index=True) -> pd.DataFrame:
+def news_db_load(database:str, table: str, dt_index=True) -> pd.DataFrame:
     '''Loads the news database.
 
     Returns:
         pd.DataFrame: The news database.
     '''
-    engine = create_engine("sqlite:///C:/Users/joneh/master_thesis/data/database/news.db", echo=False)
+    engine = create_engine(f"sqlite:///C:/Users/joneh/master_thesis/data/database/{database}", echo=False)
 
     query = f"SELECT * FROM {table}"
 
