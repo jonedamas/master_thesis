@@ -3,9 +3,5 @@ __pycache__/
 theguardian/
 SeaNMF/
 .vscode/
-.metals/
 
 .env
-
-BERT_tuning/temp/
-BERT_tuning/models/
