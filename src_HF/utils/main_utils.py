@@ -11,11 +11,13 @@ def save_path(
     '''
     Returns the absolute path to save a file in the repository.
 
-    Args:
+    Parameters
+    ----------
         relative_path (str): The relative path to the file.
         filename (str): The name of the file.
 
-    Returns:
+    Returns
+    -------
         str: The absolute path to save the file.
     '''
     repo_root = subprocess.check_output("git rev-parse --show-toplevel", shell=True).decode('utf-8').strip()
@@ -31,10 +33,12 @@ def load_df(
     '''
     Loads a news DataFrame from the repository and setting index to datetime.
 
-    Args:
+    Parameters
+    ----------
         path (str): The relative path to the news DataFrame.
 
-    Returns:
+    Returns
+    -------
         pd.DataFrame: The news DataFrame.
     '''
     df = pd.read_csv(fr'C:\Users\joneh\master_thesis\data\{data_folder}\{filename}')
@@ -46,11 +50,13 @@ def load_df(
 def load_json(file_path: str) -> Dict[str, str]:
     '''Loads a JSON file as dictionary.
 
-    Args:
+    Parameters
+    ----------
         file_path: str
             The path to the JSON file.
 
-    Returns:
+    Returns
+    -------
         dictionary: Dict[str, str]
             The JSON file as dictionary.
     '''

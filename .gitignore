@@ -1,4 +1,6 @@
 *.csv
+*.json
+
 __pycache__/
 theguardian/
 SeaNMF/

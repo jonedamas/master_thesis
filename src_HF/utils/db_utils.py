@@ -12,9 +12,17 @@ db_description = {
 def news_db_commit(df: pd.DataFrame, table: str) -> None:
     '''Commits new entries to the news database.
 
-    Args:
+    Parameters
+    ----------
         df: pd.DataFrame
             The DataFrame with new entries to commit to the database.
+
+        table: str
+            The table in the database to commit the new entries to.
+
+    Returns
+    -------
+        None
     '''
     engine = create_engine("sqlite:///C:/Users/joneh/master_thesis/data/database/news.db", echo=False)
 
@@ -35,6 +43,17 @@ def news_db_commit(df: pd.DataFrame, table: str) -> None:
 
 def news_db_load(database:str, table: str, dt_index=True) -> pd.DataFrame:
     '''Loads the news database.
+
+    Parameters
+    ----------
+        database: str
+            The database to load.
+
+        table: str
+            The table in the database to load.
+
+        dt_index: bool
+            Whether to set the datetime column as the index.
 
     Returns:
         pd.DataFrame: The news database.
