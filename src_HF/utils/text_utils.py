@@ -3,6 +3,7 @@ from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 from textblob import TextBlob
+from wordcloud import WordCloud
 
 nltk_stop_words = set(stopwords.words('english'))
 
@@ -104,3 +105,36 @@ def add_vader_compound(
     )
 
     return compound_scores
+
+
+def create_wordcloud(
+        word_series: pd.Series,
+        width: int = 400,
+        height: int = 400,
+    ) -> WordCloud:
+    """
+    Create a WordCloud object from a pandas Series of words.
+
+    Parameters
+    ----------
+        word_series_: pd.Series
+            The pandas Series of words to create the WordCloud from.
+        width: int
+            The width of the WordCloud.
+        height: int
+            The height of the WordCloud.
+
+    Returns
+    -------
+        WordCloud: The WordCloud object created from the word_series.
+    """
+    wordcloud: WordCloud = WordCloud(
+        width=width,
+        height=height,
+        max_font_size=100,
+        max_words=100,
+        colormap='twilight',
+        background_color='white'
+    ).generate(' '.join(word_series.to_list()))
+
+    return wordcloud
