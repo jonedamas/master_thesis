@@ -2,7 +2,6 @@ import os
 import subprocess
 import pandas as pd
 import json
-from typing import Dict
 
 def save_path(
         relative_path: str,
@@ -47,7 +46,7 @@ def load_df(
 
     return df
 
-def load_json(file_path: str) -> Dict[str, str]:
+def load_json(file_path: str) -> dict[str, str]:
     '''Loads a JSON file as dictionary.
 
     Parameters
@@ -61,6 +60,6 @@ def load_json(file_path: str) -> Dict[str, str]:
             The JSON file as dictionary.
     '''
     with open(file_path, 'r') as file:
-        dictionary = json.load(file)
+        dictionary: dict[str, str] = json.load(file)
 
     return dictionary

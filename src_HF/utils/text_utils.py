@@ -3,9 +3,9 @@ from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
 from wordcloud import WordCloud
 
-nltk_stop_words = set(stopwords.words('english'))
+NLTK_STOP_WORDS = set(stopwords.words('english'))
 
-ignore_words = set(
+IGNORE_WORDS = set(
     [
         'Full', 'Story', 'Reuters', 'copyright', 'c', 'Thomson', 'Click', 'Restrictions',
         'Thomson Reuters', 'Full Story', 'Click Restrictions', 'c Copyright', 'Copyright Thomson',
@@ -13,7 +13,7 @@ ignore_words = set(
     ]
 )
 
-stop_words = nltk_stop_words.union(ignore_words)
+stop_words = NLTK_STOP_WORDS.union(IGNORE_WORDS)
 
 
 def clean_tokens(

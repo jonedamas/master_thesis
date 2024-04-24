@@ -6,8 +6,8 @@ import torch
 from tqdm.auto import tqdm
 import torch.nn.functional as F
 
-finbert_model = BertForSequenceClassification.from_pretrained('yiyanghkust/finbert-tone', num_labels = 3)
-finbert_tokenizer = BertTokenizer.from_pretrained('yiyanghkust/finbert-tone')
+FINBERT_MODEL = BertForSequenceClassification.from_pretrained('yiyanghkust/finbert-tone', num_labels = 3)
+FINBERT_TOKENIZER = BertTokenizer.from_pretrained('yiyanghkust/finbert-tone')
 
 
 def add_textblob_polarity(
@@ -75,7 +75,7 @@ def finbert_sentiment(
         float
             Sentiment score
     """
-    inputs = finbert_tokenizer(
+    inputs = FINBERT_TOKENIZER(
         text,
         return_tensors="pt",
         max_length=512,
@@ -84,7 +84,7 @@ def finbert_sentiment(
         )
 
     with torch.no_grad():
-        prediction = finbert_model(**inputs)
+        prediction = FINBERT_MODEL(**inputs)
 
     probabilities: torch.Tensor = F.softmax(prediction.logits, dim=-1).squeeze()
 
