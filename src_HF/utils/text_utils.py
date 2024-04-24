@@ -1,13 +1,11 @@
 import pandas as pd
 from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
-from nltk.sentiment.vader import SentimentIntensityAnalyzer
-from textblob import TextBlob
 from wordcloud import WordCloud
 
-nltk_stop_words = set(stopwords.words('english'))
+NLTK_STOP_WORDS = set(stopwords.words('english'))
 
-ignore_words = set(
+IGNORE_WORDS = set(
     [
         'Full', 'Story', 'Reuters', 'copyright', 'c', 'Thomson', 'Click', 'Restrictions',
         'Thomson Reuters', 'Full Story', 'Click Restrictions', 'c Copyright', 'Copyright Thomson',
@@ -15,7 +13,7 @@ ignore_words = set(
     ]
 )
 
-stop_words = nltk_stop_words.union(ignore_words)
+stop_words = NLTK_STOP_WORDS.union(IGNORE_WORDS)
 
 
 def clean_tokens(
@@ -59,52 +57,6 @@ def clean_token_series(
     cleaned_tokenized: pd.Series = tokenized.apply(clean_tokens)
 
     return tokenized, cleaned_tokenized
-
-
-def add_textblob_polarity(
-        text_series: pd.Series
-    ) -> pd.Series:
-    """
-    Add TextBlob polarity scores to a text series
-
-    Parameters
-    ----------
-        text_series : pd.Series
-            Series of text to be analyzed
-
-    Returns
-    -------
-        pd.Series
-            Series of polarity scores
-    """
-    polarity_scores: pd.Series = text_series.apply(
-        lambda x: TextBlob(x).sentiment.polarity
-    )
-
-    return polarity_scores
-
-def add_vader_compound(
-        text_series: pd.Series
-    ) -> pd.Series:
-    """
-    Add VADER compound scores to a text series
-
-    Parameters
-    ----------
-        text_series : pd.Series
-            Series of text to be analyzed
-
-    Returns
-    -------
-        pd.Series
-            Series of compound scores
-    """
-    vader: SentimentIntensityAnalyzer = SentimentIntensityAnalyzer()
-    compound_scores: pd.Series = text_series.apply(
-        lambda x: vader.polarity_scores(x)['compound']
-    )
-
-    return compound_scores
 
 
 def create_wordcloud(

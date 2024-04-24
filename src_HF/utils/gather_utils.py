@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 ek.set_app_key(os.getenv('EIKON_API_KEY'))
-repo_path = os.getenv('REPO_PATH')
+REPO_PATH= os.getenv('REPO_PATH')
 
 
 def get_story_text(
@@ -48,7 +48,7 @@ def load_previous_stories(
     -------
         The previous stories as a dictionary
     """
-    file_path: str = repo_path + rf'data\raw_news_stories\EIKON_{headline_topic}_NEWS_FULL.json'
+    file_path: str = rf'{REPO_PATH}data\raw_news_stories\EIKON_{headline_topic}_NEWS_FULL.json'
 
     # check if file exists
     if not os.path.exists(file_path):
