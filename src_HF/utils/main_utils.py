@@ -3,6 +3,18 @@ import subprocess
 import pandas as pd
 import json
 
+def combload_topic_dfs(topics: list[str] | tuple[str], url_function: callable) -> pd.DataFrame:
+    df_list = []
+    for topic in topics:
+        topic_df = pd.read_csv(url_function(topic), index_col=0)
+        topic_df['topic'] = topic
+        df_list.append(topic_df)
+
+    df = pd.concat(df_list)
+
+    return df
+
+
 def save_path(
         relative_path: str,
         filename: str
