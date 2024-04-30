@@ -3,10 +3,43 @@ import subprocess
 import pandas as pd
 import json
 
-def combload_topic_dfs(topics: list[str] | tuple[str], url_function: callable) -> pd.DataFrame:
+
+def combload_topic_dfs(
+        topics: list[str] | tuple[str],
+        url_function: callable
+    ) -> pd.DataFrame:
+    """
+    Combines and loads the topic DataFrames from the given topics.
+
+    Parameters
+    ----------
+        topics: list[str] | tuple[str]
+            The topics to load.
+        url_function: callable
+            The function to get the url of the topic.
+
+    Returns
+    -------
+        pd.DataFrame
+    """
+    file_type = url_function(topics[0]).split('.')[-1]
     df_list = []
+
     for topic in topics:
-        topic_df = pd.read_csv(url_function(topic), index_col=0)
+        if file_type == 'csv':
+            topic_df = pd.read_csv(
+                url_function(topic),
+                index_col=0
+            )
+        elif file_type == 'json':
+            topic_df = pd.read_json(
+                url_function(topic),
+                lines=True,
+                orient='records'
+            )
+        else:
+            raise ValueError('File type not supported.')
+
         topic_df['topic'] = topic
         df_list.append(topic_df)
 
