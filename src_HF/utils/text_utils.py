@@ -2,6 +2,10 @@ import pandas as pd
 from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
 from wordcloud import WordCloud
+from tqdm.auto import tqdm
+import warnings
+
+warnings.filterwarnings('ignore', category=DeprecationWarning)
 
 NLTK_STOP_WORDS = set(stopwords.words('english'))
 
@@ -38,8 +42,9 @@ def clean_tokens(
 
 
 def clean_token_series(
-        series: pd.Series
-    ) -> pd.DataFrame:
+        series: pd.Series,
+        include_raw: bool = False
+    ) -> pd.Series | tuple[pd.Series, pd.Series]:
     """
     Tokenize and clean a pandas Series of text.
 
@@ -53,10 +58,16 @@ def clean_token_series(
         pd.DataFrame: A DataFrame with two columns: 'tokenized' and 'cleaned'.
 
     """
-    tokenized: pd.Series = series.apply(word_tokenize)
-    cleaned_tokenized: pd.Series = tokenized.apply(clean_tokens)
+    tqdm.pandas(desc=f"Tokenization progress for {series.name}")
+    tokenized: pd.Series = series.progress_apply(word_tokenize)
+    tqdm.pandas(desc=f"Cleaning progress for {series.name}")
+    cleaned_tokenized: pd.Series = tokenized.progress_apply(clean_tokens)
 
-    return tokenized, cleaned_tokenized
+    if include_raw:
+        return tokenized, cleaned_tokenized
+    else:
+        return cleaned_tokenized
+
 
 
 def create_wordcloud(
