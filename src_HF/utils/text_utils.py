@@ -5,9 +5,21 @@ from wordcloud import WordCloud
 from tqdm.auto import tqdm
 import warnings
 
-warnings.filterwarnings('ignore', category=DeprecationWarning)
+import sys
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+REPO_PATH =  os.getenv('REPO_PATH')
+
+sys.path.insert(0, rf'{REPO_PATH}src_HF')
+from utils.sentiment_utils import add_vader_compound, add_textblob_polarity
+
 
 NLTK_STOP_WORDS = set(stopwords.words('english'))
+
+
 
 IGNORE_WORDS = set(
     [
@@ -68,6 +80,36 @@ def clean_token_series(
     else:
         return cleaned_tokenized
 
+
+def create_word_df(
+    df: pd.DataFrame,
+    topic: str
+    ) -> dict[str, pd.DataFrame]:
+    """
+    Create a DataFrame of words and their counts for a given topic.
+
+    Parameters
+    ----------
+        df: pd.DataFrame
+            The DataFrame to create the word DataFrame from.
+        topic: str
+            The topic to create the word DataFrame for.
+
+    Returns
+    -------
+        pd.DataFrame: The DataFrame of words and their counts for the given topic.
+    """
+    word_series = df[df['topic'] == topic]['tokenized_cleaned'].explode()
+    word_series = word_series[~word_series.isin(IGNORE_WORDS)]
+
+    word_df = pd.DataFrame(
+        word_series.value_counts()
+    ).reset_index().rename(columns={'tokenized_cleaned': 'word'})
+
+    word_df['vader'] = add_vader_compound(word_df['word'], name=topic)
+    word_df['textblob'] = add_textblob_polarity(word_df['word'], name=topic)
+
+    return word_df
 
 
 def create_wordcloud(

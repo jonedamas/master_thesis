@@ -1,10 +1,10 @@
-from gensim.models.ldamodel import LdaModel
+from gensim.models import LdaMulticore
 from gensim.corpora.dictionary import Dictionary
 from gensim import corpora
 import pandas as pd
 import pyLDAvis.gensim
-import matplotlib.pyplot as plt
 import seaborn as sns
+from matplotlib.axes import Axes
 
 
 class LDAModelSetup:
@@ -53,10 +53,10 @@ class LDAModelSetup:
         self.corpus = [self.dictionary.doc2bow(doc) for doc in self.doc_list]
 
     def generate_model(self) -> None:
-        self.model = LdaModel(
+        self.model = LdaMulticore(
             corpus=self.corpus,
             id2word=self.dictionary.id2token,
-            alpha='auto',
+            workers=6,
             eta='auto',
             **self.params
         )
@@ -68,10 +68,9 @@ class LDAModelSetup:
             dictionary = self.dictionary
         )
 
-    def plot_pyLDAvis(self) -> plt.Figure:
+    def plot_pyLDAvis(self, ax: Axes) -> None:
         pc_data = self.visfig.topic_coordinates
 
-        fig, ax = plt.subplots(figsize=(7, 7), dpi=200)
         colors = sns.color_palette('twilight', n_colors=len(pc_data))
         pc_data.plot(
             kind='scatter', x='x', y='y',
@@ -120,17 +119,18 @@ class LDAModelSetup:
                     ha='center', va='center',
                     color='white'
                 )
+            # add fraction of articles in the topic
+            ax.text(row['x'], row['y'] - 0.03,
+                    f"{row['Freq']:.1f}%", fontsize=10,
+                    ha='center', va='center',
+                    color='white'
+                )
 
         ax.text(
             0.00, 1.00, self.name, fontsize=24,
             color='dimgray', transform=ax.transAxes
         )
-        ax.text(
-            0.00, 0.95, f'{self.name} articles:', fontsize=12,
-            color='dimgray', transform=ax.transAxes
-        )
 
-        return fig
 
     def __repr__(self) -> str:
         return f'LDAModelSetup({self.name})'
@@ -139,7 +139,7 @@ class LDAModelSetup:
 def classify_article(
         article,
         dictionary: Dictionary,
-        model: LdaModel
+        model: LdaMulticore
     ) -> int:
     """
     Classifies the given article into a topic.

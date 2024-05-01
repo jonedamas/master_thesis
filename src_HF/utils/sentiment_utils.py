@@ -5,7 +5,8 @@ from tqdm.auto import tqdm
 
 
 def add_textblob_polarity(
-        text_series: pd.Series
+        text_series: pd.Series,
+        name: str | None = None
     ) -> pd.Series:
     """
     Add TextBlob polarity scores to a text series
@@ -20,7 +21,8 @@ def add_textblob_polarity(
         pd.Series
             Series of polarity scores
     """
-    tqdm.pandas(desc=f"Textblob progress for {text_series.name}")
+    object_name = text_series.name if name is None else name
+    tqdm.pandas(desc=f"Textblob progress for {object_name}")
     polarity_scores: pd.Series = text_series.progress_apply(
         lambda x: TextBlob(x).sentiment.polarity
     )
@@ -29,7 +31,8 @@ def add_textblob_polarity(
 
 
 def add_vader_compound(
-        text_series: pd.Series
+        text_series: pd.Series,
+        name: str | None = None
     ) -> pd.Series:
     """
     Add VADER compound scores to a text series
@@ -44,7 +47,8 @@ def add_vader_compound(
         pd.Series
             Series of compound scores
     """
-    tqdm.pandas(desc=f"VADER progress for {text_series.name}")
+    object_name = text_series.name if name is None else name
+    tqdm.pandas(desc=f"VADER progress for {object_name}")
     vader: SentimentIntensityAnalyzer = SentimentIntensityAnalyzer()
     compound_scores: pd.Series = text_series.progress_apply(
         lambda x: vader.polarity_scores(x)['compound']
