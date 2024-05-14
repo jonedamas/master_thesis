@@ -1,11 +1,14 @@
 import numpy as np
 import pandas as pd
+from functools import partial
 from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import train_test_split
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import LSTM, GRU, Bidirectional, Input, Dense, Dropout, BatchNormalization, GaussianNoise
 from tensorflow.keras.regularizers import l2
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.callbacks import EarlyStopping
+from tensorflow.keras.preprocessing.sequence import TimeseriesGenerator
 
 from hpbandster.core.worker import Worker
 import ConfigSpace as CS
@@ -22,6 +25,13 @@ from dotenv import load_dotenv
 load_dotenv()
 REPO_PATH= os.getenv('REPO_PATH')
 
+
+rnn_layers = {
+    'LSTM': LSTM,
+    'BiLSTM': lambda units, **kwargs: Bidirectional(LSTM(units, **kwargs)),
+    'GRU': GRU,
+    'BiGRU': lambda units, **kwargs: Bidirectional(GRU(units, **kwargs))
+}
 
 
 def load_prepared_data(future, topic, resample_window='5min'):
@@ -44,8 +54,14 @@ def load_prepared_data(future, topic, resample_window='5min'):
     return df
 
 
-
-def preprocess_data(df, feature_columns, target_column, window_size, train_split=0.8):
+def preprocess_data(
+        df: pd.DataFrame,
+        feature_columns: list[str],
+        target_column: str,
+        window_size: int,
+        train_split: float = 0.8,
+        batch_size: int = 32
+    ) -> tuple[TimeseriesGenerator, TimeseriesGenerator]:
     """
     Preprocess the data for LSTM-like models.
 
@@ -59,42 +75,39 @@ def preprocess_data(df, feature_columns, target_column, window_size, train_split
     Returns:
     - X_train, X_test, y_train, y_test: Training and testing data split.
     """
-
     # Select features and target
-    X = df[feature_columns]
-    y = df[target_column]
+    X: pd.Series = df[feature_columns]
+    y: pd.Series = df[target_column]
 
-    def create_sequences(X, y, window_size):
-        X_seq, y_seq = [], []
-        for i in range(len(X) - window_size):
-            X_seq.append(X.iloc[i:(i + window_size)].values)
-            y_seq.append(y.iloc[i + window_size])
-        return np.array(X_seq), np.array(y_seq)
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, train_size=train_split, shuffle=False
+    )
 
-
-    # Create sequences
-    X_seq, y_seq = create_sequences(X, y, window_size)
-
-    # Scale data
+    # scale data
     scaler = StandardScaler()
-    X_seq_scaled = np.array([scaler.fit_transform(x) for x in X_seq])
+    X_train: np.array = scaler.fit_transform(X_train)
+    X_test: np.array = scaler.transform(X_test)
 
-    # Split data into training and testing sets
-    train_size = int(len(X_seq_scaled) * train_split)
-    X_train, X_test = X_seq_scaled[:train_size], X_seq_scaled[train_size:]
-    y_train, y_test = y_seq[:train_size], y_seq[train_size:]
+    # Create sequences of window_size with TimeseriesGenerator
+    train_generator = TimeseriesGenerator(
+        X_train, y_train, length=window_size, batch_size=batch_size
+    )
+    test_generator = TimeseriesGenerator(
+        X_test, y_test, length=window_size, batch_size=batch_size
+    )
 
-    return X_train, X_test, y_train, y_test
+    return train_generator, test_generator
 
 
 def optimize_hyperparameters(
-        X_train: any,
-        y_train: any,
+        train_generator: TimeseriesGenerator,
+        val_generator: TimeseriesGenerator,
+        trial_config: dict[str, any],
         feature_columns: list[str],
         rnn_type: str = 'LSTM',
         window_size: int = 30,
         n_trials: int = 50,
-        n_jobs: int = -1
+        n_jobs: int = -1,
     ) -> dict[str, any]:
     """
     Optimize RNN model hyperparameters using Optuna for a given RNN type.
@@ -118,37 +131,55 @@ def optimize_hyperparameters(
         Best hyperparameters found during optimization.
     """
 
-    def objective(trial):
+    def objective(trial, config: dict[str, any]):
         # Model configuration based on trial suggestions
-        units_first_layer = trial.suggest_categorical("units_first_layer", [16, 32, 64, 128])
-        units_second_layer = trial.suggest_categorical("units_second_layer", [16, 32, 64, 96])
-        dropout_rate_first = trial.suggest_float("dropout_rate_first", 0.1, 0.5)
-        dropout_rate_second = trial.suggest_float("dropout_rate_second", 0.1, 0.5)
-        l2_strength = trial.suggest_float("l2_strength", 1e-5, 1e-3, log=True)
-        learning_rate = trial.suggest_float("learning_rate", 1e-5, 1e-2, log=True)
-        batch_size = trial.suggest_categorical("batch_size", [16, 32, 64])
-        noise_std = trial.suggest_float("noise_std", 0.01, 0.1)
+        units_first_layer = trial.suggest_categorical(
+            'units_first_layer', config['units_first_layer']
+        )
+        units_second_layer = trial.suggest_categorical(
+            'units_second_layer', config['units_second_layer']
+        )
+        dropout_rate_first = trial.suggest_float(
+            'dropout_rate_first', *config['dropout_rate_first']
+        )
+        dropout_rate_second = trial.suggest_float(
+            'dropout_rate_second', *config['dropout_rate_second']
+        )
+        l2_strength = trial.suggest_float(
+            'l2_strength', *config['l2_strength'], log=True
+        )
+        learning_rate = trial.suggest_float(
+            'learning_rate', *config['learning_rate'], log=True
+        )
+        batch_size = trial.suggest_categorical(
+            'batch_size', config['batch_size']
+        )
+        noise_std = trial.suggest_float(
+            'noise_std', *config['noise_std']
+        )
 
         # Selecting the model type
-        if rnn_type == 'LSTM':
-            rnn_layer = LSTM
-        elif rnn_type == 'BiLSTM':
-            rnn_layer = lambda units, **kwargs: Bidirectional(LSTM(units, **kwargs))
-        elif rnn_type == 'GRU':
-            rnn_layer = GRU
-        elif rnn_type == 'BiGRU':
-            rnn_layer = lambda units, **kwargs: Bidirectional(GRU(units, **kwargs))
+        if rnn_type in rnn_layers:
+            rnn_layer = rnn_layers[rnn_type]
         else:
-            raise ValueError("Unsupported RNN type")
+            raise ValueError(f"Unsupported RNN type: {rnn_type}")
 
         # Building the model
         model = Sequential([
             Input(shape=(window_size, len(feature_columns))),
             GaussianNoise(noise_std),
-            rnn_layer(units_first_layer, return_sequences=True, kernel_regularizer=l2(l2_strength)),
+            rnn_layer(
+                units_first_layer,
+                return_sequences=True,
+                kernel_regularizer=l2(l2_strength)
+            ),
             Dropout(dropout_rate_first),
             BatchNormalization(),
-            rnn_layer(units_second_layer, return_sequences=False, kernel_regularizer=l2(l2_strength)),
+            rnn_layer(
+                units_second_layer,
+                return_sequences=False,
+                kernel_regularizer=l2(l2_strength)
+            ),
             Dropout(dropout_rate_second),
             BatchNormalization(),
             Dense(1, activation='linear')
@@ -156,21 +187,37 @@ def optimize_hyperparameters(
 
         # Compile the model
         optimizer = Adam(learning_rate=learning_rate)
-        model.compile(optimizer=optimizer, loss='mean_squared_error', metrics=['mean_absolute_error'])
-
+        model.compile(
+            optimizer=optimizer,
+            loss='mean_squared_error',
+            metrics=['mean_absolute_error']
+        )
         # Early stopping
-        early_stopping = EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True)
-
+        early_stopping = EarlyStopping(
+            monitor='val_loss',
+            patience=10,
+            restore_best_weights=True
+        )
         # Train the model
-        history = model.fit(X_train, y_train, epochs=50, batch_size=int(batch_size),
-                            validation_split=0.2, callbacks=[early_stopping], verbose=0)
-
+        history = model.fit(
+            train_generator,
+            epochs=50,
+            batch_size=int(batch_size),
+            validation_data=val_generator,
+            callbacks=[early_stopping],
+            verbose=0
+        )
         return np.min(history.history['val_loss'])
 
     study = optuna.create_study(direction="minimize")
-    study.optimize(objective, n_trials=n_trials, n_jobs=n_jobs)
-    return study.best_params
 
+    study.optimize(
+        partial(objective, config=trial_config),
+        n_trials=n_trials,
+        n_jobs=n_jobs
+    )
+
+    return study.best_params
 
 
 def build_rnn_model(
@@ -189,16 +236,11 @@ def build_rnn_model(
     Returns:
     - model: Compiled TensorFlow/Keras model.
     """
-    if rnn_type == 'LSTM':
-        rnn_layer = LSTM
-    elif rnn_type == 'BiLSTM':
-        rnn_layer = lambda units, **kwargs: Bidirectional(LSTM(units, **kwargs))
-    elif rnn_type == 'GRU':
-        rnn_layer = GRU
-    elif rnn_type == 'BiGRU':
-        rnn_layer = lambda units, **kwargs: Bidirectional(GRU(units, **kwargs))
+    # Selecting the model type
+    if rnn_type in rnn_layers:
+        rnn_layer = rnn_layers[rnn_type]
     else:
-        raise ValueError("Unsupported RNN type")
+        raise ValueError(f"Unsupported RNN type: {rnn_type}")
 
     model = Sequential([
         Input(shape=input_shape),
@@ -217,9 +259,6 @@ def build_rnn_model(
     model.compile(optimizer=optimizer, loss='mean_squared_error', metrics=['mean_absolute_error'])
 
     return model
-
-
-
 
 
 class RNNWorker(Worker):
