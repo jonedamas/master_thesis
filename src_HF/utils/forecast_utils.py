@@ -26,7 +26,7 @@ load_dotenv()
 REPO_PATH= os.getenv('REPO_PATH')
 
 
-rnn_layers = {
+rnn_layers: dict[str, any] = {
     'LSTM': LSTM,
     'BiLSTM': lambda units, **kwargs: Bidirectional(LSTM(units, **kwargs)),
     'GRU': GRU,
@@ -34,7 +34,10 @@ rnn_layers = {
 }
 
 
-def load_prepared_data(future, topic, resample_window='5min'):
+def load_prepared_data(
+        future: str,
+        topic: str,
+    ) -> pd.DataFrame:
     """
     Load data for specified future and topic with a given resample window size.
 
@@ -47,7 +50,7 @@ def load_prepared_data(future, topic, resample_window='5min'):
     - DataFrame of the loaded data.
     """
 
-    file_name = f"{future}_{topic}_{resample_window}_resampled.csv"
+    file_name = f"{future}_{topic}_5min_resampled.csv"
     file_path = os.path.join(REPO_PATH, 'data', 'prepared_data', file_name)
 
     df = pd.read_csv(file_path, index_col='date', parse_dates=True)
@@ -59,9 +62,10 @@ def preprocess_data(
         feature_columns: list[str],
         target_column: str,
         window_size: int,
-        train_split: float = 0.8,
+        test_size: float = 0.2,
+        val_size: float = 0.2,
         batch_size: int = 32
-    ) -> tuple[TimeseriesGenerator, TimeseriesGenerator]:
+    ) -> tuple[TimeseriesGenerator]:
     """
     Preprocess the data for LSTM-like models.
 
@@ -79,24 +83,31 @@ def preprocess_data(
     X: pd.Series = df[feature_columns]
     y: pd.Series = df[target_column]
 
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, train_size=train_split, shuffle=False
+    X_temp, X_test, y_temp, y_test = train_test_split(
+        X, y, test_size=test_size, shuffle=False
     )
-
+    X_train, X_val, y_train, y_val = train_test_split(
+        X_temp, y_temp, test_size=val_size, shuffle=False
+    )
     # scale data
     scaler = StandardScaler()
     X_train: np.array = scaler.fit_transform(X_train)
+    X_val: np.array = scaler.transform(X_val)
     X_test: np.array = scaler.transform(X_test)
 
     # Create sequences of window_size with TimeseriesGenerator
     train_generator = TimeseriesGenerator(
         X_train, y_train, length=window_size, batch_size=batch_size
     )
+    val_generator = TimeseriesGenerator(
+        X_val, y_val, length=window_size, batch_size=batch_size
+    )
     test_generator = TimeseriesGenerator(
         X_test, y_test, length=window_size, batch_size=batch_size
     )
 
-    return train_generator, test_generator
+    return train_generator, val_generator, test_generator
+
 
 
 def optimize_hyperparameters(
@@ -192,12 +203,14 @@ def optimize_hyperparameters(
             loss='mean_squared_error',
             metrics=['mean_absolute_error']
         )
+
         # Early stopping
         early_stopping = EarlyStopping(
             monitor='val_loss',
             patience=10,
             restore_best_weights=True
         )
+
         # Train the model
         history = model.fit(
             train_generator,
