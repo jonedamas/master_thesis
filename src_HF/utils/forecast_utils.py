@@ -1,7 +1,8 @@
 import numpy as np
 import pandas as pd
 from functools import partial
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import StandardScaler, MinMaxScaler
+from sklearn.metrics import mean_squared_error, mean_absolute_error
 from sklearn.model_selection import train_test_split
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import LSTM, GRU, Bidirectional, Input, Dense, Dropout, BatchNormalization, GaussianNoise
@@ -9,15 +10,6 @@ from tensorflow.keras.regularizers import l2
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.callbacks import EarlyStopping
 from tensorflow.keras.preprocessing.sequence import TimeseriesGenerator
-
-from hpbandster.core.worker import Worker
-import ConfigSpace as CS
-import ConfigSpace.hyperparameters as CSH
-from ConfigSpace.hyperparameters import UniformFloatHyperparameter, UniformIntegerHyperparameter
-from ConfigSpace.configuration_space import ConfigurationSpace
-from hpbandster.optimizers import BOHB as BOHB_Optimizer
-import logging
-from hpbandster.core.result import json_result_logger
 
 import optuna
 import os
@@ -34,80 +26,85 @@ rnn_layers: dict[str, any] = {
 }
 
 
-def load_prepared_data(
-        future: str,
-        topic: str,
-    ) -> pd.DataFrame:
-    """
-    Load data for specified future and topic with a given resample window size.
+class RNNGenerator:
+    def __init__(self, future: str, topic: str):
+        self.future = future
+        self.topic = topic
 
-    Parameters:
-    - future: str, one of the futures in the FUTURES list.
-    - topic: str, one of the topics in the TOPICS list.
-    - resample_window: str, resample window size, default is '5min'.
+        self.train_generator = None
+        self.val_generator = None
+        self.test_generator = None
 
-    Returns:
-    - DataFrame of the loaded data.
-    """
+        self.file_path = os.path.join(
+            REPO_PATH,
+            'data',
+            'prepared_data',
+            f"{future}_{topic}_5min_resampled.csv"
+        )
 
-    file_name = f"{future}_{topic}_5min_resampled.csv"
-    file_path = os.path.join(REPO_PATH, 'data', 'prepared_data', file_name)
+        self.df = pd.read_csv(self.file_path, index_col='date', parse_dates=True)
 
-    df = pd.read_csv(file_path, index_col='date', parse_dates=True)
-    return df
+    def __repr__(self) -> str:
+        return f"RNNGenerator(future={self.future}, topic={self.topic})"
 
 
-def preprocess_data(
-        df: pd.DataFrame,
-        feature_columns: list[str],
-        target_column: str,
-        window_size: int,
-        test_size: float = 0.2,
-        val_size: float = 0.2,
-        batch_size: int = 32
-    ) -> tuple[TimeseriesGenerator]:
-    """
-    Preprocess the data for LSTM-like models.
+    def preprocess_data(
+            self,
+            feature_columns: list[str],
+            target_column: str,
+            window_size: int,
+            test_size: float = 0.2,
+            val_size: float = 0.2,
+            batch_size: int = 32,
+            scaler_type: str = 'StandardScaler'
+        ) -> None:
+        """
+        Preprocess the data for LSTM-like models.
 
-    Parameters:
-    - df: DataFrame containing the dataset.
-    - feature_columns: List of columns to be used as features.
-    - target_column: Column to be used as target.
-    - window_size: Number of past time steps to use as input features.
-    - train_split: Fraction of the data to be used for training (default is 0.8).
+        Parameters:
+        - df: DataFrame containing the dataset.
+        - feature_columns: List of columns to be used as features.
+        - target_column: Column to be used as target.
+        - window_size: Number of past time steps to use as input features.
+        - train_split: Fraction of the data to be used for training (default is 0.8).
 
-    Returns:
-    - X_train, X_test, y_train, y_test: Training and testing data split.
-    """
-    # Select features and target
-    X: pd.Series = df[feature_columns]
-    y: pd.Series = df[target_column]
+        Returns:
+        - train_generator: TimeseriesGenerator for training data.
+        - val_generator: TimeseriesGenerator for validation data.
+        - test_generator: TimeseriesGenerator for test data.
+        """
+        # Select features and target
+        X: pd.Series = self.df[feature_columns]
+        y: pd.Series = self.df[target_column]
 
-    X_temp, X_test, y_temp, y_test = train_test_split(
-        X, y, test_size=test_size, shuffle=False
-    )
-    X_train, X_val, y_train, y_val = train_test_split(
-        X_temp, y_temp, test_size=val_size, shuffle=False
-    )
-    # scale data
-    scaler = StandardScaler()
-    X_train: np.array = scaler.fit_transform(X_train)
-    X_val: np.array = scaler.transform(X_val)
-    X_test: np.array = scaler.transform(X_test)
+        X_temp, X_test, y_temp, y_test = train_test_split(
+            X, y, test_size=test_size, shuffle=False
+        )
+        X_train, X_val, y_train, y_val = train_test_split(
+            X_temp, y_temp, test_size=val_size, shuffle=False
+        )
+        # scale data
+        if scaler_type == 'StandardScaler':
+            self.scaler = StandardScaler()
+        elif scaler_type == 'MinMaxScaler':
+            self.scaler = MinMaxScaler()
+        else:
+            raise ValueError('Unsupported scaler type.')
 
-    # Create sequences of window_size with TimeseriesGenerator
-    train_generator = TimeseriesGenerator(
-        X_train, y_train, length=window_size, batch_size=batch_size
-    )
-    val_generator = TimeseriesGenerator(
-        X_val, y_val, length=window_size, batch_size=batch_size
-    )
-    test_generator = TimeseriesGenerator(
-        X_test, y_test, length=window_size, batch_size=batch_size
-    )
+        X_train: np.array = self.scaler.fit_transform(X_train)
+        X_val: np.array = self.scaler.transform(X_val)
+        X_test: np.array = self.scaler.transform(X_test)
 
-    return train_generator, val_generator, test_generator
-
+        # Create sequences of window_size with TimeseriesGenerator
+        self.train_generator = TimeseriesGenerator(
+            X_train, y_train, length=window_size, batch_size=batch_size
+        )
+        self.val_generator = TimeseriesGenerator(
+            X_val, y_val, length=window_size, batch_size=batch_size
+        )
+        self.test_generator = TimeseriesGenerator(
+            X_test, y_test, length=window_size, batch_size=batch_size
+        )
 
 
 def optimize_hyperparameters(
@@ -274,131 +271,61 @@ def build_rnn_model(
     return model
 
 
-class RNNWorker(Worker):
-    """
-    A worker class for the BOHB optimizer to train and evaluate RNN models.
+class ForecastModel:
+    def __init__(
+            self,
+            model_name: str,
+            model_params: dict[str, any],
+            data_params: dict[str, any]
+        ):
+        self.model_name = model_name
+        self.model_params = model_params
+        self.data_params = data_params
 
-    Attributes:
-        X_train (np.array): Training features data.
-        y_train (np.array): Training target data.
-        feature_columns (list): List of feature column names.
-        rnn_type (str): Type of the RNN model ('LSTM', 'BiLSTM', 'GRU', 'BiGRU').
-        window_size (int): Number of past time steps used as input features.
-    """
-    def __init__(self, X_train, y_train, feature_columns, rnn_type, window_size, **kwargs):
-        super().__init__(**kwargs)
-        self.X_train = X_train
-        self.y_train = y_train
-        self.feature_columns = feature_columns
-        self.rnn_type = rnn_type
-        self.window_size = window_size
+        model_comp = model_name.split('_')
+        self.future = model_comp[0]
+        self.topic = model_comp[1]
+        self.rnn_type = model_comp[2]
 
-    def compute(self, config, budget, **kwargs):
-        """
-        Trains and evaluates the RNN model using configurations and budget provided by BOHB.
+        self.gen = RNNGenerator(self.future, self.topic)
 
-        Parameters:
-            config (dict): Configuration parameters for the model provided by BOHB.
-            budget (float): Fractional budget to use for the training epochs.
+        self.gen.preprocess_data(
+            self.data_params['feature_columns'],
+            self.data_params['target_column'],
+            self.data_params['window_size'],
+            test_size=self.data_params['test_size'],
+            val_size=self.data_params['val_size']
+        )
 
-        Returns:
-            dict: Contains the loss and optional additional info about the model.
-        """
-        # Extract parameters from config
-        units_first_layer = config['units_first_layer']
-        units_second_layer = config['units_second_layer']
-        dropout_rate_first = config['dropout_rate_first']
-        dropout_rate_second = config['dropout_rate_second']
-        l2_strength = config['l2_strength']
-        learning_rate = config['learning_rate']
-        noise_std = config['noise_std']
+        # Build the model
+        self.model = build_rnn_model(
+            self.rnn_type,
+            self.model_params,
+            (
+                self.data_params['window_size'],
+                len(self.data_params['feature_columns'])
+            )
+        )
 
-        model = build_rnn_model(self.rnn_type, config, (self.window_size, len(self.feature_columns)))
-        optimizer = Adam(learning_rate=learning_rate)
-        model.compile(optimizer=optimizer, loss='mean_squared_error', metrics=['mean_absolute_error'])
-
-        # Early stopping
-        early_stopping = EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True)
-
-        # Fit the model
-        model.fit(self.X_train, self.y_train, epochs=int(budget), batch_size=32, validation_split=0.2, callbacks=[early_stopping], verbose=0)
-
-        # Evaluate the model
-        _, val_mae = model.evaluate(self.X_train, self.y_train, verbose=0)
-        return ({
-            'loss': val_mae,  # This is the metric to minimize
-            'info': {}  # Additional optional information
-        })
+        self.model.load_weights(f'model_archive/{self.model_name}.h5')
 
 
+        self.test_predictions = self.model.predict(
+            self.gen.test_generator
+        ).flatten()
 
-    @staticmethod
-    def get_configspace():
-        config_space = ConfigurationSpace()
+        self.test_targets = np.concatenate(
+            [y for _, y in self.gen.test_generator]
+        ).flatten()
 
-        # Explicit integer casting to avoid any possible type confusion
-        units_first_layer = UniformIntegerHyperparameter(
-            "units_first_layer", lower=16, upper=128, default_value=int(64))
-        units_second_layer = UniformIntegerHyperparameter(
-            "units_second_layer", lower=16, upper=96, default_value=int(32))
-        dropout_rate_first = UniformFloatHyperparameter(
-            "dropout_rate_first", lower=0.1, upper=0.5, default_value=0.3)  # Correct as float
-        dropout_rate_second = UniformFloatHyperparameter(
-            "dropout_rate_second", lower=0.1, upper=0.5, default_value=0.3)  # Correct as float
-        l2_strength = UniformFloatHyperparameter(
-            "l2_strength", lower=1e-5, upper=1e-3, default_value=0.0001, log=True)  # Explicit float
-        learning_rate = UniformFloatHyperparameter(
-            "learning_rate", lower=1e-5, upper=1e-2, default_value=0.001, log=True)  # Explicit float
-        batch_size = UniformIntegerHyperparameter(
-            "batch_size", lower=16, upper=64, default_value=int(32))  # Explicit integer casting
+        self.mse = mean_squared_error(
+            self.test_targets, self.test_predictions
+        )
+        self.mae = mean_absolute_error(
+            self.test_targets, self.test_predictions
+        )
 
-        noise_std = UniformFloatHyperparameter(
-            "noise_std", lower=0.01, upper=0.1, default_value=0.05)  # Correct as float
-
-        config_space.add_hyperparameters([
-            units_first_layer,
-            units_second_layer,
-            dropout_rate_first,
-            dropout_rate_second,
-            l2_strength,
-            learning_rate,
-            batch_size,
-            noise_std
-        ])
-        return config_space
-
-
-
-
-def optimize_hyperparameters_bohb(X_train, y_train, feature_columns, rnn_type, window_size, min_budget, max_budget, n_iterations):
-    """
-    Utilizes BOHB to optimize hyperparameters for specified RNN model type.
-
-    Parameters:
-        X_train (np.array): Training feature data.
-        y_train (np.array): Training target data.
-        feature_columns (list): List of feature column names used in the model.
-        rnn_type (str): Type of RNN model to optimize ('LSTM', 'BiLSTM', 'GRU', 'BiGRU').
-        window_size (int): Number of time steps in input sequences.
-        min_budget (int): Minimum number of epochs for model training.
-        max_budget (int): Maximum number of epochs for model training.
-        n_iterations (int): Number of BOHB iterations to perform.
-
-    Returns:
-        dict: Best configuration found by the BOHB optimizer.
-    """
-    worker = RNNWorker(X_train, y_train, feature_columns, rnn_type, window_size, run_id='0')
-    result_logger = json_result_logger(directory='.', overwrite=True)
-    bohb = BOHB_Optimizer(configspace=worker.get_configspace(),
-                          run_id='0',
-                          min_budget=min_budget,
-                          max_budget=max_budget,
-                          result_logger=result_logger)
-
-    res = bohb.run(n_iterations=n_iterations)
-    bohb.shutdown(shutdown_workers=True)
-    id2config = res.get_id2config_mapping()
-    incumbent = res.get_incumbent_id()
-    best_config = id2config[incumbent]['config']
-
-    return best_config
+    def describe(self):
+        print(f'Model: {self.model_name}')
+        print(f'MSE: {self.mse}')
+        print(f'MAE: {self.mae}')
