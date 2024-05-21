@@ -31,9 +31,8 @@ SCALERS: dict[str, any] = {
 }
 
 class RNNGenerator:
-    def __init__(self, future: str, topic: str, CV: bool = False, CVfolds: int = 5):
+    def __init__(self, future: str, CV: bool = False, CVfolds: int = 5):
         self.future = future
-        self.topic = topic
         self.CV = CV
 
         self.test_dates: None | pd.DatetimeIndex = None
@@ -49,7 +48,7 @@ class RNNGenerator:
             REPO_PATH,
             'data',
             'prepared_data',
-            f"{future}_{topic}_5min_resampled.csv"
+            f"{future}_5min_resampled.csv"
         )
 
         self.df = pd.read_csv(self.file_path, index_col='date', parse_dates=True)

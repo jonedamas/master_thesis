@@ -3,10 +3,15 @@ import subprocess
 import pandas as pd
 import json
 
+import os
+from dotenv import load_dotenv
+load_dotenv()
+REPO_PATH= os.getenv('REPO_PATH')
 
 def combload_topic_dfs(
         topics: list[str] | tuple[str],
-        url_function: callable
+        url_function: callable,
+        include_topic: bool = False
     ) -> pd.DataFrame:
     """
     Combines and loads the topic DataFrames from the given topics.
@@ -40,12 +45,27 @@ def combload_topic_dfs(
         else:
             raise ValueError('File type not supported.')
 
+        if include_topic:
+            with open(f'{REPO_PATH}data/topic_data/{topic}_TOPICS.json', 'r') as file:
+                topic_dict = json.load(file)
+
+            topic_df['LDA_topic'] = topic_df['storyId'].map(topic_dict)
+
         topic_df['topic'] = topic
         df_list.append(topic_df)
 
     df = pd.concat(df_list)
 
+    if include_topic:
+        with open(f'{REPO_PATH}data/topic_data/CROSS_TOPICS.json', 'r') as file:
+            crosstopic_dict = json.load(file)
+
+        df['cross_topic'] = df['storyId'].map(crosstopic_dict)
+
     return df
+
+
+
 
 
 def save_path(

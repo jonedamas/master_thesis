@@ -1,16 +1,8 @@
 BASE:
-  - 'article_count'
   - 'CLOSE'
   - 'VOLUME'
   - 'COUNT'
   - 'LOGRET'
-
-SENTIMENT:
-  - 'TextBlob_headline'
-  - 'VADER_headline'
-  - 'TextBlob_fullStory'
-  - 'VADER_fullStory'
-
 TEMPORAL:
   - 'HOUR'
   - 'MINUTE'
