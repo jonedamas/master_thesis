@@ -10,12 +10,6 @@ TEMPORAL:
   - 'MINUTE_OF_DAY'
   - 'DAY_OF_WEEK'
   - 'DAY_OF_MONTH'
-LAGS:
-  - 'RV_LAG_1'
-  - 'RV_LAG_2'
-  - 'RV_LAG_3'
-  - 'RV_LAG_4'
-  - 'RV_LAG_5'
 SENTIMENT:
   - 'CRU_TextBlob'
   - 'CRU_VADER'

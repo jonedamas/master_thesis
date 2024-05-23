@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import json
 from functools import partial
 from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
 from sklearn.model_selection import train_test_split, TimeSeriesSplit
@@ -313,3 +314,26 @@ def build_rnn_model(
     model.compile(optimizer=optimizer, loss='mean_squared_error', metrics=['mean_absolute_error'])
 
     return model
+
+
+def save_model_info(
+        model,
+        model_name: str,
+        model_params,
+        data_params
+    ) -> None:
+
+    if not os.path.exists(f'model_archive/{model_name}'):
+        os.makedirs(f'model_archive/{model_name}')
+
+        model.save(f'model_archive/{model_name}/model_weights.h5')
+
+        with open(f'model_archive/{model_name}/model_params.json', 'w') as file:
+            json.dump(model_params, file, indent=4)
+
+        with open(f'model_archive/{model_name}/data_params.json', 'w') as file:
+            json.dump(data_params, file, indent=4)
+
+        print(f'Model saved as {model_name}')
+    else:
+        print('Model already exists')
