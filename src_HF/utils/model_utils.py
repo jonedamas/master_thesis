@@ -31,7 +31,24 @@ SCALERS: dict[str, any] = {
 }
 
 class RNNGenerator:
-    def __init__(self, future: str, CV: bool = False, CVfolds: int = 5):
+    def __init__(
+            self,
+            future: str,
+            CV: bool = False,
+            CVfolds: int = 5
+        ):
+        """
+        Initialize the RNNGenerator class.
+
+        Parameters
+        ----------
+        future : str
+            The futures data to use.
+        CV : bool
+            Whether to use cross-validation or not.
+        CVfolds : int
+            Number of cross-validation folds.
+        """
         self.future = future
         self.CV = CV
 
@@ -54,7 +71,7 @@ class RNNGenerator:
         self.df = pd.read_csv(self.file_path, index_col='date', parse_dates=True)
 
     def __repr__(self) -> str:
-        return f"RNNGenerator(future={self.future}, topic={self.topic})"
+        return f"RNNGenerator(future={self.future})"
 
 
     def preprocess_data(
@@ -106,7 +123,7 @@ class RNNGenerator:
             X_test, y_test, length=window_size, batch_size=batch_size
         )
 
-        if self.CV:
+        if self.CV:  # cross-validation
             for train_index, val_index in self.tscv.split(X_temp):
                 # Create generators for each split
                 train_generator = TimeseriesGenerator(
@@ -122,7 +139,7 @@ class RNNGenerator:
 
                 self.train_generators.append(train_generator)
                 self.val_generators.append(val_generator)
-        else:
+        else:  # no cross-validation
             X_train, X_val, y_train, y_val = train_test_split(
                 X_temp, y_temp, test_size=val_size, shuffle=False
             )

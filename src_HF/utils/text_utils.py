@@ -19,8 +19,6 @@ from utils.sentiment_utils import add_vader_compound, add_textblob_polarity
 
 NLTK_STOP_WORDS = set(stopwords.words('english'))
 
-
-
 IGNORE_WORDS = set(
     [
         'Full', 'Story', 'Reuters', 'copyright', 'c', 'Thomson', 'Click', 'Restrictions',
