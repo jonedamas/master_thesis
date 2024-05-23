@@ -109,7 +109,7 @@ class SentVAR:
 
         linestyles = {'CLc1': '-', 'LCOc1': '--'}
 
-        colors = ['Green', 'Red', 'gray']
+        colors = ['#056517', '#bf1029']
         labels = ['Positive', 'Negative']
 
         for key, model_info in self.model_dict.items():
@@ -120,7 +120,7 @@ class SentVAR:
                     plot_ax.lines[0].get_xdata(),
                     plot_ax.lines[0].get_ydata(),
                     color=colors[i],
-                    label=labels[i] if key == 'CLc1' else None,
+                    label=f'{labels[i]} - {key}',
                     linestyle=linestyles[key],
                 )
 
@@ -128,7 +128,6 @@ class SentVAR:
         ax.axhline(0, color='black', lw=0.5)
         ax.set_xlabel('Hours after shock', fontsize=16)
         ax.set_ylabel('Response', fontsize=16)
-        ax.legend(frameon=False, fontsize=14)
         x_ticks = np.arange(0, 101, 20)
         ax.set_xticks(x_ticks)
         ax.set_xticklabels((x_ticks * 5 / 60).astype(int))
