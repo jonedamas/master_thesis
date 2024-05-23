@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import json
 from sklearn.metrics import mean_squared_error, mean_absolute_error
 from arch import arch_model
 
@@ -36,19 +37,23 @@ class ForecastModel:
     def __init__(
             self,
             model_name: str,
-            model_params: dict[str, any],
-            data_params: dict[str, any],
         ):
+
         self.model_name = model_name
-        self.model_params = model_params
-        self.data_params = data_params
+
+        with open(f'model_archive/{self.model_name}/data_params.json', 'r') as f:
+            self.data_params = json.load(f)
+        with open(f'model_archive/{self.model_name}/model_params.json', 'r') as f:
+            self.model_params = json.load(f)
 
         model_comp = model_name.split('_')
         self.future = model_comp[0]
-        self.topic = model_comp[1]
-        self.rnn_type = model_comp[2]
+        self.rnn_type = model_comp[1]
 
-        self.gen = RNNGenerator(self.future, self.topic)
+        self.gen = RNNGenerator(
+            self.future,
+            self.data_params['CV']
+        )
 
         self.gen.preprocess_data(
             self.data_params['feature_columns'],
@@ -56,7 +61,6 @@ class ForecastModel:
             self.data_params['window_size'],
             test_size=self.data_params['test_size'],
             val_size=self.data_params['val_size'],
-            CV=self.data_params['CV']
         )
 
         # Build the model
@@ -69,8 +73,9 @@ class ForecastModel:
             )
         )
 
-        self.model.load_weights(f'model_archive/{self.model_name}.h5')
-
+        self.model.load_weights(
+            f'model_archive/{self.model_name}/model_weights.h5'
+        )
 
         self.test_predictions = self.model.predict(
             self.gen.test_generator
