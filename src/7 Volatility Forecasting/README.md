@@ -1,32 +1,29 @@
 # Volatility Forecasting
 
 
-## Input Data Format
+## Parameter set explanation
 
-- datetime: The date and time the article was published
-    - **Type:** Datetime64[ns]: `YYYY-MM-DD hh:mm:ss`
+The `DATA_PARAMS` dictionary contains parameters used to configure the preprocessing and data handling for training the RNN model. These parameters collectively define how the data is prepared and split for training, validation, and testing. Here’s a summary:
 
-- SVI: The Stock Volatility Index
-    - **Type:** Float
+- **Feature Columns**: Specifies the columns used as input features for the model.
+- **Target Column**: Defines the column used as the target variable for prediction, in this case, 'REALIZED_VOL'.
+- **Window Size**: Sets the size of the rolling window used to create sequences of data for the RNN input.
+- **Test Size**: Indicates the proportion of the dataset to be used for testing, set to 20% in this case.
+- **Validation Size**: Indicates the proportion of the dataset to be used for validation, also set to 20% in this case.
+- **Cross-Validation (CV)**: A boolean flag to indicate whether cross-validation should be used. Here, it is set to False.
+- **Scaler Type**: Specifies the type of scaler used to normalize the data, with 'RobustScaler' being chosen to handle outliers effectively.
 
-## Models
+These parameters are essential for ensuring that the data is properly prepared and split for training, validation, and testing, leading to better model performance and generalization.
 
-### GARCH
+***
 
-Generalized Autoregressive Conditional Heteroskedasticity (GARCH) is a type of time series model that is used to model the volatility of a time series. In this model, we use a GARCH model to predict the volatility of a stock. The model is trained on a time series of historical stock prices and returns, and is able to predict the volatility of the stock at each time step. The model is trained using the maximum likelihood estimation method. The model is evaluated using the root mean squared error (RMSE) and the mean absolute error (MAE) on a test set of historical stock prices and returns.
+The `MODEL_PARAMS` dictionary contains hyperparameters used to configure a Recurrent Neural Network (RNN) model. These parameters collectively define the structure and training behavior of the model. Here’s a summary:
 
-$$
-\begin{gather*}
-r_t = \mu + \epsilon_t \\[10pt]
-\epsilon_t = \sigma_t z_t \\[10pt]
-\sigma_t^2 = \omega + \sum_{i=1}^p\alpha_i \epsilon_{t-1}^2 + \sum_{j=1}^q\beta_j \sigma_{t-1}^2
-\end{gather*}
-$$
+- **Layer Units**: Specifies the number of neurons in the first and second RNN layers, controlling the model’s capacity to learn patterns.
+- **Dropout Rates**: Determines the fraction of neurons to drop during training in each dropout layer to prevent overfitting.
+- **L2 Regularization Strength**: Applies a penalty on large weights to prevent overfitting by encouraging smaller, more generalized weights.
+- **Learning Rate**: Sets the step size for the optimizer during training, affecting how quickly the model learns.
+- **Batch Size**: Defines the number of samples processed before updating the model’s parameters, impacting training stability and memory usage.
+- **Gaussian Noise Standard Deviation**: Adds noise to the input data to make the model more robust to variations and prevent overfitting.
 
-### LSTM
-
-Long Short-Term Memory (LSTM) is a type of recurrent neural network that is capable of learning order dependence in sequence prediction problems. In this model, we use an LSTM to predict the volatility of a stock. The model is trained on a time series of historical stock prices and returns, and is able to predict the volatility of the stock at each time step. The model is trained using the Adam optimizer and the mean squared error loss function. The model is evaluated using the root mean squared error (RMSE) and the mean absolute error (MAE) on a test set of historical stock prices and returns.
-
-### BI-LSTM
-
-Bi-directional Long Short-Term Memory (BI-LSTM) is a type of recurrent neural network that is capable of learning order dependence in sequence prediction problems. In this model, we use a BI-LSTM to predict the volatility of a stock. The model is trained on a time series of historical stock prices and returns, and is able to predict the volatility of the stock at each time step. The model is trained using the Adam optimizer and the mean squared error loss function. The model is evaluated using the root mean squared error (RMSE) and the mean absolute error (MAE) on a test set of historical stock prices and returns.
+These hyperparameters are crucial for tuning the model’s performance and ensuring it generalizes well to new, unseen data.

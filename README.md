@@ -3,33 +3,97 @@
 ## Repository structure
 
 ### src
+
 This folder contains the source code of the project.
 
-- #### Data Gathering
+#### 1 - Data Gathering
 
-- #### Data Cleaning
+***
+This folder contains all news and futures price data gathering scripts. The scripts are used to gather data from Refinitiv Eikon API.
 
-- #### Sentiment Analysis
+**Files:**
 
-- #### TSA
+- eikon_headline_retrieval.ipynb
+- eikon_HF_price_retrieval.ipynb
+- eikon_stories_retrieval.ipynb
 
-- #### Feature Engineering
+#### 2 - Data Cleaning and EDA
 
-- #### Volatility Forecasting
+***
+This folder contains all data cleaning and exploratory data analysis scripts. The scripts are used to clean and explore the gathered data.
+
+**Files:**
+
+- crude_oil_grade.ipynb
+- news_data_analysis.ipynb
+- price_data_analysis.ipynb
+- text_treatment.ipynb
+- word_analysis.ipynb
+
+#### 3 - Topic Modelling
+
+***
+This folder contains all topic modelling scripts. The scripts are used to identify latent topics in the news data using LDA.
+
+**Files:**
+
+- topic_modelling.ipynb
+
+#### 4 - Sentiment Analysis
+
+***
+This folder contains all sentiment analysis scripts. The scripts are used to perform sentiment analysis on the news data.
+
+**Files:**
+
+- sentiment_analysis.ipynb
+- sentiment_applier.ipynb
+- sentiment_index_analysis.ipynb
+
+#### 5 - Event Analysis
+
+***
+This folder contains all event analysis scripts. The scripts are used to identify events in the news data and its effect on volatility.
+
+**Files:**
+
+- event_analysis.ipynb
+- VAR.ipynb
+
+#### 6 - Feature Engineering
+
+***
+This folder contains all feature engineering scripts. The scripts are used to create and filter features for the volatility forecasting model, and prepare the data.
+
+**Files:**
+
+- data_preparation.ipynb
+- feature_selection.ipynb
+
+#### 7 - Volatility Forecasting
+
+***
+This folder contains all volatility forecasting scripts. The scripts are used to train and evaluate the volatility forecasting model.
+
+**Files:**
+
+- fit_GARCH.ipynb
+- fit_RNN.ipynb
+- forecast_comparison.ipynb
+- hyperpm_tuning.ipynb
+
+#### utils
+
+***
+This folder contains all utility functions used in the project.
 
 ### data
-This folder contains the data used in the project, including the database.
 
-### BERT_tuning
-This folder contains the code used to fine-tune the FinBERT model.
+This folder contains the data used in the project.
 
 ## Usefull articles
 
-#### Volatility spillover
-
-[Volatility spillovers in commodity markets: A large t-vector autoregressive approach](https://www.sciencedirect.com/science/article/pii/S0140988319303500?ref=pdf_download&fr=RR-2&rr=81f715e65ea71bfa)
-
-#### Sentiment Analysis
+### Sentiment Analysis
 
 [Oil price volatility and new evidence from news and Twitter](https://www.sciencedirect.com/science/article/pii/S0140988323002098?ref=pdf_download&fr=RR-2&rr=81fbb4f16e03569a)
 
