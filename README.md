@@ -98,3 +98,7 @@ This folder contains the data used in the project.
 [Oil price volatility and new evidence from news and Twitter](https://www.sciencedirect.com/science/article/pii/S0140988323002098?ref=pdf_download&fr=RR-2&rr=81fbb4f16e03569a)
 
 [Investor sentiment and machine learning: Predicting the price of China's crude oil futures market](https://www.sciencedirect.com/science/article/pii/S0360544222003747?pes=vor)
+
+### RNN forecasting
+
+[A Deep Learning based Model for Predicting the future prices of Bitcoin](https://ieeexplore.ieee.org/document/10157841)
