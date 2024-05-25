@@ -91,8 +91,40 @@ class ForecastModel:
         self.mae = mean_absolute_error(
             self.test_targets, self.test_predictions
         )
+        self.da = directional_accuracy(
+            pd.Series(self.test_targets),
+            pd.Series(self.test_predictions)
+        )
 
     def describe(self):
         print(f'Model: {self.model_name}')
         print(f'MSE: {self.mse}')
         print(f'MAE: {self.mae}')
+        print(f'Directional Accuracy: {self.da}')
+
+
+def directional_accuracy(
+        y_true: pd.Series,
+        y_pred: pd.Series
+    ) -> float:
+    """
+    Calculate the directional accuracy of a forecast model
+
+    Parameters
+    ----------
+    y_true : pd.Series
+        The true target values
+    y_pred : pd.Series
+        The predicted target values
+
+    Returns
+    -------
+    float
+        The accuracy of the model in predicting the direction of the target
+    """
+    true_change = np.sign(y_true.diff().fillna(0))
+    pred_change = np.sign(y_pred.diff().fillna(0))
+
+    accuracy = (true_change == pred_change).sum() / len(true_change)
+
+    return accuracy
