@@ -1,6 +1,8 @@
 import numpy as np
 import pandas as pd
 import json
+from tqdm.notebook import tqdm
+import matplotlib.pyplot as plt
 from functools import partial
 from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
 from sklearn.model_selection import train_test_split, TimeSeriesSplit
@@ -88,17 +90,22 @@ class RNNGenerator:
         """
         Preprocess the data for LSTM-like models.
 
-        Parameters:
-        - df: DataFrame containing the dataset.
-        - feature_columns: List of columns to be used as features.
-        - target_column: Column to be used as target.
-        - window_size: Number of past time steps to use as input features.
-        - train_split: Fraction of the data to be used for training (default is 0.8).
-
-        Returns:
-        - train_generator: TimeseriesGenerator for training data.
-        - val_generator: TimeseriesGenerator for validation data.
-        - test_generator: TimeseriesGenerator for test data.
+        Parameters
+        ----------
+        feature_columns : list
+            List of feature columns to use.
+        target_column : str
+            Target column to predict.
+        window_size : int
+            Number of time steps to use for prediction.
+        test_size : float
+            Fraction of data to use for testing.
+        val_size : float
+            Fraction of data to use for validation.
+        batch_size : int
+            Batch size for training.
+        scaler_type : str
+            Type of scaler to use.
         """
         # Select features and target
         X: pd.Series = self.df[feature_columns]
@@ -150,6 +157,70 @@ class RNNGenerator:
             self.val_generators.append(TimeseriesGenerator(
                 X_val, y_val, length=window_size, batch_size=batch_size
             ))
+
+
+def train_RNN(
+        future: str,
+        data_params: dict[str, any],
+        model_params: dict[str, any],
+        rnn_type: str,
+        max_epochs: int
+    ) -> tuple[Sequential, RNNGenerator]:
+
+    # Configure early stopping
+    early_stopping = EarlyStopping(
+        monitor='val_loss',
+        patience=10,
+        restore_best_weights=True,
+        verbose=1
+    )
+
+    # Create generator
+    gen = RNNGenerator(
+        future=future,
+        CV=data_params['CV']
+    )
+
+    gen.preprocess_data(
+        data_params['feature_columns'],
+        data_params['target_column'],
+        data_params['window_size'],
+        test_size=data_params['test_size'],
+        val_size=data_params['val_size'],
+        scaler_type=data_params['scaler_type']
+    )
+
+    # Build the model
+    model = build_rnn_model(
+        rnn_type,
+        model_params,
+        (data_params['window_size'], len(data_params['feature_columns']))
+    )
+
+    fig, ax = plt.subplots(figsize=(7, 5), dpi=200)
+
+    history_list = list()
+    # Train the model with early stopping and Cross Validation
+    for i in tqdm(range(len(gen.train_generators))):
+        history = model.fit(
+            gen.train_generators[i],
+            epochs=max_epochs,
+            batch_size=model_params['batch_size'],
+            validation_data=gen.val_generators[i],
+            callbacks=[early_stopping],
+            verbose=1
+        )
+        history_list.append(history)
+        ax.plot(history.history['loss'], label=f'Train Loss k={i + 1}')
+        ax.plot(history.history['val_loss'], linestyle=':', label=f'Val Loss k={i + 1}')
+        ax.set_yscale('log')
+
+    ax.set_title('Model Training and Validation Loss')
+    ax.set_xlabel('Epochs')
+    ax.set_ylabel('Loss MSE')
+    ax.legend(frameon=False)
+
+    return model, gen
 
 
 def optimize_hyperparameters(
@@ -300,10 +371,18 @@ def build_rnn_model(
     model = Sequential([
         Input(shape=input_shape),
         GaussianNoise(best_params['noise_std']),
-        rnn_layer(best_params['units_first_layer'], return_sequences=True, kernel_regularizer=l2(best_params['l2_strength'])),
+        rnn_layer(
+            best_params['units_first_layer'],
+            return_sequences=True,
+            kernel_regularizer=l2(best_params['l2_strength'])
+        ),
         Dropout(best_params['dropout_rate_first']),
         BatchNormalization(),
-        rnn_layer(best_params['units_second_layer'], return_sequences=False, kernel_regularizer=l2(best_params['l2_strength'])),
+        rnn_layer(
+            best_params['units_second_layer'],
+            return_sequences=False,
+            kernel_regularizer=l2(best_params['l2_strength'])
+        ),
         Dropout(best_params['dropout_rate_second']),
         BatchNormalization(),
         Dense(1, activation='linear')
@@ -311,7 +390,12 @@ def build_rnn_model(
 
     # Compile the model
     optimizer = Adam(learning_rate=best_params['learning_rate'])
-    model.compile(optimizer=optimizer, loss='mean_squared_error', metrics=['mean_absolute_error'])
+
+    model.compile(
+        optimizer=optimizer,
+        loss='mean_squared_error',
+        metrics=['mean_absolute_error']
+    )
 
     return model
 
@@ -328,10 +412,14 @@ def save_model_info(
 
         model.save(f'model_archive/{model_name}/model_weights.h5')
 
-        with open(f'model_archive/{model_name}/model_params.json', 'w') as file:
+        with open(
+            f'model_archive/{model_name}/model_params.json', 'w'
+            ) as file:
             json.dump(model_params, file, indent=4)
 
-        with open(f'model_archive/{model_name}/data_params.json', 'w') as file:
+        with open(
+            f'model_archive/{model_name}/data_params.json', 'w'
+            ) as file:
             json.dump(data_params, file, indent=4)
 
         print(f'Model saved as {model_name}')
