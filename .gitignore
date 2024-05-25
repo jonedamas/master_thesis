@@ -1,9 +1,6 @@
 *.csv
 *.json
-
+*.h5
 __pycache__/
-theguardian/
-SeaNMF/
 .vscode/
-
 .env
