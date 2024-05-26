@@ -40,15 +40,19 @@ def grangers_causation_matrix(
         maxlag: int=12
     ) -> pd.DataFrame:
 
-    df = pd.DataFrame(np.zeros((len(variables), len(variables))), columns=variables, index=variables)
-    for c in tqdm(df.columns):
+    df = pd.DataFrame(
+        np.zeros((len(variables), len(variables))),
+        columns=variables,
+        index=variables
+    )
+    for c in tqdm(df.columns, desc='Granger Causality Matrix'):
         for r in df.index:
             test_result = grangercausalitytests(
                 data[[r, c]],
                 maxlag=maxlag,
                 verbose=False
             )
-            p_values = [round(test_result[i+1][0][test][1],4) for i in range(maxlag)]
+            p_values = [round(test_result[i+1][0][test][1], 4) for i in range(maxlag)]
             if verbose: print(f'Y = {r}, X = {c}, P Values = {p_values}')
             min_p_value = np.min(p_values)
             df.loc[r, c] = min_p_value

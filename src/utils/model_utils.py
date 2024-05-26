@@ -162,7 +162,7 @@ def train_RNN(
         model_params: dict[str, any],
         rnn_type: str,
         max_epochs: int
-    ) -> tuple[Sequential, RNNGenerator]:
+    ) -> tuple[Sequential, RNNGenerator, dict[str, any]]:
 
     # Configure early stopping
     early_stopping = EarlyStopping(
@@ -194,7 +194,7 @@ def train_RNN(
         (data_params['window_size'], len(data_params['feature_columns']))
     )
 
-    _, ax = plt.subplots(figsize=(7, 5), dpi=200)
+    fig, ax = plt.subplots(figsize=(7, 5), dpi=200)
 
     history_list = list()
 
@@ -216,9 +216,15 @@ def train_RNN(
             callbacks=[early_stopping],
             verbose=1
         )
+
+        loss_dict = {
+            'train_loss': history.history['loss'],
+            'val_loss': history.history['val_loss']
+        }
+
         history_list.append(history)
-        ax.plot(history.history['loss'], label=f'Train Loss k={i + 1}')
-        ax.plot(history.history['val_loss'], linestyle=':', label=f'Val Loss k={i + 1}')
+        ax.plot(loss_dict['train_loss'], label=f'Train Loss k={i + 1}')
+        ax.plot(loss_dict['val_loss'], linestyle=':', label=f'Val Loss k={i + 1}')
 
     ax.set_yscale('log')
     ax.set_title('Model Training and Validation Loss')
@@ -226,7 +232,7 @@ def train_RNN(
     ax.set_ylabel('Loss MSE')
     ax.legend(frameon=False)
 
-    return model, gen
+    return model, gen, loss_dict
 
 
 def optimize_hyperparameters(
@@ -410,7 +416,8 @@ def save_model_info(
         model: Sequential,
         model_name: str,
         model_params: dict[str, any],
-        data_params: dict[str, any]
+        data_params: dict[str, any],
+        loss_dict: dict[str, any]
     ) -> None:
 
     if not os.path.exists(f'model_archive/{model_name}'):
@@ -427,6 +434,11 @@ def save_model_info(
             f'model_archive/{model_name}/data_params.json', 'w'
             ) as file:
             json.dump(data_params, file, indent=4)
+
+        with open(
+            f'model_archive/{model_name}/loss_data.json', 'w'
+            ) as file:
+            json.dump(loss_dict, file, indent=4)
 
         print(f'Model saved as {model_name}')
     else:
