@@ -2,7 +2,6 @@ import numpy as np
 import pandas as pd
 import json
 from sklearn.metrics import mean_squared_error, mean_absolute_error
-from arch import arch_model
 
 import os
 import sys
@@ -12,24 +11,6 @@ REPO_PATH= os.getenv('REPO_PATH')
 sys.path.insert(0, rf'{REPO_PATH}src')
 
 from utils.model_utils import build_rnn_model, RNNGenerator
-
-
-class ForecastGARCH:
-    def __init__(self,
-        model_name: str,
-        model_params: dict[str, any],
-        data_params: dict[str, any]
-        ):
-
-        self.model_name = model_name
-        self.model_params = model_params
-        self.data_params = data_params
-
-
-    def describe(self):
-        print(f'Model: {self.model_name}')
-        print(f'MSE: {self.mse}')
-        print(f'MAE: {self.mae}')
 
 
 # RNN forecast model

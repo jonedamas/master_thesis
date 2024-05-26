@@ -65,9 +65,6 @@ def combload_topic_dfs(
     return df
 
 
-
-
-
 def save_path(
         relative_path: str,
         filename: str
@@ -128,3 +125,37 @@ def load_json(file_path: str) -> dict[str, str]:
         dictionary: dict[str, str] = json.load(file)
 
     return dictionary
+
+
+def load_processed(
+        futures: str | list[str]
+    ) -> dict[str, pd.DataFrame]:
+    """
+    Load the processed data for the given futures.
+
+    Parameters
+    ----------
+        futures: str | list[str]
+            The futures to load the data for.
+
+    Returns
+    -------
+        pd.DataFrame | dict[str, pd.DataFrame]
+    """
+    if isinstance(futures, str):
+        futures = [futures]
+
+    df_dict = {
+        future: pd.read_csv(
+            os.path.join(
+                REPO_PATH,
+                'data',
+                'prepared_data',
+                f"{future}_5min_resampled.csv"
+            ),
+            index_col='date',
+            parse_dates=True
+        ) for future in futures
+    }
+
+    return df_dict
