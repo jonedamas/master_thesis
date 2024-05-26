@@ -60,14 +60,12 @@ class RNNGenerator:
         self.future = future
         self.CV = CV
 
+        # Loading preprocessed data
         self.df = load_processed(self.future)[future]
-
-        print(type(self.df))
+        self.tscv = TimeSeriesSplit(n_splits=CVfolds)
 
         self.test_dates: None | pd.DatetimeIndex = None
         self.train_dates: None | pd.DatetimeIndex = None
-
-        self.tscv = TimeSeriesSplit(n_splits=CVfolds)
 
         self.train_generators: list[any] = list()
         self.val_generators: list[any] = list()
@@ -196,11 +194,20 @@ def train_RNN(
         (data_params['window_size'], len(data_params['feature_columns']))
     )
 
-    fig, ax = plt.subplots(figsize=(7, 5), dpi=200)
+    _, ax = plt.subplots(figsize=(7, 5), dpi=200)
 
     history_list = list()
+
     # Train the model with early stopping and Cross Validation
-    for i in tqdm(range(len(gen.train_generators))):
+    if len(gen.train_generators) > 1:
+        loop_range = tqdm(
+            range(len(gen.train_generators)),
+            desc='Running Cross Validation',
+        )
+    else:
+        loop_range = [0]
+
+    for i in loop_range:
         history = model.fit(
             gen.train_generators[i],
             epochs=max_epochs,
