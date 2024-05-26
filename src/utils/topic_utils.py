@@ -52,6 +52,19 @@ class LDAModelSetup:
 
         self.corpus = [self.dictionary.doc2bow(doc) for doc in self.doc_list]
 
+    def print_top_words(
+            self,
+            n_words: int = 10
+        ) -> None:
+
+        for i, topic in self.model.show_topics(
+                num_topics=-1,
+                num_words=n_words,
+                formatted=False
+            ):
+            print(f'Topic {i}: {[word[0] for word in topic]}')
+
+
     def generate_model(self) -> None:
         self.model = LdaMulticore(
             corpus=self.corpus,
@@ -65,7 +78,8 @@ class LDAModelSetup:
         self.visfig = pyLDAvis.gensim.prepare(
             topic_model = self.model,
             corpus = self.corpus,
-            dictionary = self.dictionary
+            dictionary = self.dictionary,
+            sort_topics=False
         )
 
     def plot_pyLDAvis(self, ax: Axes) -> None:
@@ -121,7 +135,7 @@ class LDAModelSetup:
                 )
             # add fraction of articles in the topic
             ax.text(row['x'], row['y'] - 0.03,
-                    f"{row['Freq']:.1f}%", fontsize=10,
+                    f"{row['Freq']:.0f}%", fontsize=10,
                     ha='center', va='center',
                     color='white'
                 )
