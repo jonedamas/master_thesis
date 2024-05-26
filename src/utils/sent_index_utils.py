@@ -1,9 +1,5 @@
-from julia import Main
-
 import pandas as pd
 from typing import List
-
-Main.include(r'sent_index.jl')
 
 
 def aggregate_score(
@@ -34,22 +30,3 @@ def aggregate_score(
     resampled_df = resampled_df.reindex(date_range, fill_value=0)
 
     return  resampled_df
-
-
-def SI_bai(
-        sent_series: pd.Series,
-        beta: float
-    ) -> pd.Series:
-    """
-    Returns the sentiment index of the given sentiment series
-
-    Args:
-        sent_series: pd.Series
-        beta: float
-
-    Returns:
-        pd.Series
-    """
-    sent_series = Main.SI_bai(sent_series.to_list(), float(beta))
-
-    return sent_series

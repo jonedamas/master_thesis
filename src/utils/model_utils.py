@@ -6,18 +6,23 @@ import matplotlib.pyplot as plt
 from functools import partial
 from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
 from sklearn.model_selection import train_test_split, TimeSeriesSplit
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import LSTM, GRU, Bidirectional, Input, Dense, Dropout, BatchNormalization, GaussianNoise
-from tensorflow.keras.regularizers import l2
-from tensorflow.keras.optimizers import Adam
-from tensorflow.keras.callbacks import EarlyStopping
-from tensorflow.keras.preprocessing.sequence import TimeseriesGenerator
+
+from keras.models import Sequential
+from keras.layers import LSTM, GRU, Bidirectional, Input, Dense, Dropout, BatchNormalization, GaussianNoise
+from keras.regularizers import l2
+from keras.optimizers import Adam
+from keras.callbacks import EarlyStopping
+from keras.preprocessing.sequence import TimeseriesGenerator
 
 import optuna
 import os
+import sys
 from dotenv import load_dotenv
 load_dotenv()
 REPO_PATH= os.getenv('REPO_PATH')
+
+sys.path.insert(0, rf'{REPO_PATH}src')
+from utils.main_utils import load_processed
 
 
 RNN_LAYERS: dict[str, any] = {
@@ -55,27 +60,19 @@ class RNNGenerator:
         self.future = future
         self.CV = CV
 
+        # Loading preprocessed data
+        self.df = load_processed(self.future)[future]
+        self.tscv = TimeSeriesSplit(n_splits=CVfolds)
+
         self.test_dates: None | pd.DatetimeIndex = None
         self.train_dates: None | pd.DatetimeIndex = None
-
-        self.tscv = TimeSeriesSplit(n_splits=CVfolds)
 
         self.train_generators: list[any] = list()
         self.val_generators: list[any] = list()
         self.test_generator: None | any = None
 
-        self.file_path = os.path.join(
-            REPO_PATH,
-            'data',
-            'prepared_data',
-            f"{future}_5min_resampled.csv"
-        )
-
-        self.df = pd.read_csv(self.file_path, index_col='date', parse_dates=True)
-
     def __repr__(self) -> str:
-        return f"RNNGenerator(future={self.future})"
-
+        return f"RNNGenerator(future={self.future}), CV={self.CV})"
 
     def preprocess_data(
             self,
@@ -197,11 +194,20 @@ def train_RNN(
         (data_params['window_size'], len(data_params['feature_columns']))
     )
 
-    fig, ax = plt.subplots(figsize=(7, 5), dpi=200)
+    _, ax = plt.subplots(figsize=(7, 5), dpi=200)
 
     history_list = list()
+
     # Train the model with early stopping and Cross Validation
-    for i in tqdm(range(len(gen.train_generators))):
+    if len(gen.train_generators) > 1:
+        loop_range = tqdm(
+            range(len(gen.train_generators)),
+            desc='Running Cross Validation',
+        )
+    else:
+        loop_range = [0]
+
+    for i in loop_range:
         history = model.fit(
             gen.train_generators[i],
             epochs=max_epochs,
@@ -401,10 +407,10 @@ def build_rnn_model(
 
 
 def save_model_info(
-        model,
+        model: Sequential,
         model_name: str,
-        model_params,
-        data_params
+        model_params: dict[str, any],
+        data_params: dict[str, any]
     ) -> None:
 
     if not os.path.exists(f'model_archive/{model_name}'):
