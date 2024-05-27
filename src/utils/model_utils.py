@@ -8,7 +8,7 @@ from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
 from sklearn.model_selection import train_test_split, TimeSeriesSplit
 
 from keras.models import Sequential
-from keras.layers import LSTM, GRU, Bidirectional, Input, Dense, Dropout, BatchNormalization, GaussianNoise
+from keras.layers import LSTM, GRU, Bidirectional, Input, Dense, GaussianNoise
 from keras.regularizers import l2
 from keras.optimizers import Adam
 from keras.callbacks import EarlyStopping
@@ -37,6 +37,58 @@ SCALERS: dict[str, any] = {
     'MinMaxScaler': MinMaxScaler,
     'RobustScaler': RobustScaler
 }
+
+
+def build_rnn_model(
+        rnn_type: str,
+        best_params: dict[str, any],
+        input_shape: tuple[int, int]
+    ) -> Sequential:
+    """
+    Build RNN model based on the type and provided hyperparameters.
+
+    Parameters:
+    - rnn_type : str, type of RNN to build ('LSTM', 'BiLSTM', 'GRU', 'BiGRU')
+    - best_params : dict, dictionary containing optimized hyperparameters
+    - input_shape : tuple, shape of the input data
+
+    Returns:
+    - model: Compiled TensorFlow/Keras model.
+    """
+    # Selecting the model type
+    if rnn_type in RNN_LAYERS:
+        rnn_layer = RNN_LAYERS[rnn_type]
+    else:
+        raise ValueError(f"Unsupported RNN type: {rnn_type}")
+
+    model = Sequential([
+        Input(shape=input_shape),
+        GaussianNoise(best_params['noise_std']),
+        rnn_layer(
+            best_params['units_first_layer'],
+            return_sequences=True,
+            kernel_regularizer=l2(best_params['l2_strength'])
+        ),
+        rnn_layer(
+            best_params['units_second_layer'],
+            return_sequences=False,
+            kernel_regularizer=l2(best_params['l2_strength'])
+        ),
+        Dense(1, activation='linear')
+    ])
+
+    # Compile the model
+    optimizer = Adam(learning_rate=best_params['learning_rate'])
+
+    model.compile(
+        optimizer=optimizer,
+        loss='mean_squared_error',
+        metrics=['mean_absolute_error']
+    )
+
+    return model
+
+
 
 class RNNGenerator:
     def __init__(
@@ -167,12 +219,12 @@ def train_RNN(
     # Configure early stopping
     early_stopping = EarlyStopping(
         monitor='val_loss',
-        patience=10,
+        patience=5,
         restore_best_weights=True,
         verbose=1
     )
 
-    # Create generator
+    # Create generatorW
     gen = RNNGenerator(
         future=future,
         CV=data_params['CV']
@@ -194,7 +246,7 @@ def train_RNN(
         (data_params['window_size'], len(data_params['feature_columns']))
     )
 
-    fig, ax = plt.subplots(figsize=(7, 5), dpi=200)
+    _, ax = plt.subplots(figsize=(7, 5), dpi=200)
 
     history_list = list()
 
@@ -236,12 +288,10 @@ def train_RNN(
 
 
 def optimize_hyperparameters(
-        train_generator: TimeseriesGenerator,
-        val_generator: TimeseriesGenerator,
+        future: str,
         trial_config: dict[str, any],
-        feature_columns: list[str],
-        rnn_type: str = 'LSTM',
-        window_size: int = 30,
+        data_params: dict[str, any],
+        rnn_type: str,
         n_trials: int = 50,
         n_jobs: int = -1,
     ) -> dict[str, any]:
@@ -267,19 +317,18 @@ def optimize_hyperparameters(
         Best hyperparameters found during optimization.
     """
 
-    def objective(trial, config: dict[str, any]):
+
+
+    def objective(
+            trial,
+            config: dict[str, any]
+        ):
         # Model configuration based on trial suggestions
         units_first_layer = trial.suggest_categorical(
             'units_first_layer', config['units_first_layer']
         )
         units_second_layer = trial.suggest_categorical(
             'units_second_layer', config['units_second_layer']
-        )
-        dropout_rate_first = trial.suggest_float(
-            'dropout_rate_first', *config['dropout_rate_first']
-        )
-        dropout_rate_second = trial.suggest_float(
-            'dropout_rate_second', *config['dropout_rate_second']
         )
         l2_strength = trial.suggest_float(
             'l2_strength', *config['l2_strength'], log=True
@@ -294,57 +343,47 @@ def optimize_hyperparameters(
             'noise_std', *config['noise_std']
         )
 
-        # Selecting the model type
-        if rnn_type in RNN_LAYERS:
-            rnn_layer = RNN_LAYERS[rnn_type]
-        else:
-            raise ValueError(f"Unsupported RNN type: {rnn_type}")
-
         # Building the model
-        model = Sequential([
-            Input(shape=(window_size, len(feature_columns))),
-            GaussianNoise(noise_std),
-            rnn_layer(
-                units_first_layer,
-                return_sequences=True,
-                kernel_regularizer=l2(l2_strength)
-            ),
-            Dropout(dropout_rate_first),
-            BatchNormalization(),
-            rnn_layer(
-                units_second_layer,
-                return_sequences=False,
-                kernel_regularizer=l2(l2_strength)
-            ),
-            Dropout(dropout_rate_second),
-            BatchNormalization(),
-            Dense(1, activation='linear')
-        ])
-
-        # Compile the model
-        optimizer = Adam(learning_rate=learning_rate)
-        model.compile(
-            optimizer=optimizer,
-            loss='mean_squared_error',
-            metrics=['mean_absolute_error']
+        model = build_rnn_model(
+            rnn_type,
+            {
+                'units_first_layer': units_first_layer,
+                'units_second_layer': units_second_layer,
+                'l2_strength': l2_strength,
+                'learning_rate': learning_rate,
+                'batch_size': batch_size,
+                'noise_std': noise_std
+            },
+            (data_params['window_size'], len(data_params['feature_columns']))
         )
 
         # Early stopping
         early_stopping = EarlyStopping(
             monitor='val_loss',
-            patience=10,
+            patience=5,
             restore_best_weights=True
+        )
+
+        gen = RNNGenerator(future=future, CV=data_params['CV'])
+
+        gen.preprocess_data(
+            data_params['feature_columns'],
+            data_params['target_column'],
+            data_params['window_size'],
+            test_size=data_params['test_size'],
+            val_size=data_params['val_size']
         )
 
         # Train the model
         history = model.fit(
-            train_generator,
+            gen.train_generators[-1],
             epochs=50,
             batch_size=int(batch_size),
-            validation_data=val_generator,
+            validation_data=gen.val_generators[-1],
             callbacks=[early_stopping],
             verbose=0
         )
+
         return np.min(history.history['val_loss'])
 
     study = optuna.create_study(direction="minimize")
@@ -356,60 +395,6 @@ def optimize_hyperparameters(
     )
 
     return study.best_params
-
-
-def build_rnn_model(
-        rnn_type: str,
-        best_params: dict[str, any],
-        input_shape: tuple[int, int]
-    ) -> Sequential:
-    """
-    Build RNN model based on the type and provided hyperparameters.
-
-    Parameters:
-    - rnn_type : str, type of RNN to build ('LSTM', 'BiLSTM', 'GRU', 'BiGRU')
-    - best_params : dict, dictionary containing optimized hyperparameters
-    - input_shape : tuple, shape of the input data
-
-    Returns:
-    - model: Compiled TensorFlow/Keras model.
-    """
-    # Selecting the model type
-    if rnn_type in RNN_LAYERS:
-        rnn_layer = RNN_LAYERS[rnn_type]
-    else:
-        raise ValueError(f"Unsupported RNN type: {rnn_type}")
-
-    model = Sequential([
-        Input(shape=input_shape),
-        GaussianNoise(best_params['noise_std']),
-        rnn_layer(
-            best_params['units_first_layer'],
-            return_sequences=True,
-            kernel_regularizer=l2(best_params['l2_strength'])
-        ),
-        Dropout(best_params['dropout_rate_first']),
-        BatchNormalization(),
-        rnn_layer(
-            best_params['units_second_layer'],
-            return_sequences=False,
-            kernel_regularizer=l2(best_params['l2_strength'])
-        ),
-        Dropout(best_params['dropout_rate_second']),
-        BatchNormalization(),
-        Dense(1, activation='linear')
-    ])
-
-    # Compile the model
-    optimizer = Adam(learning_rate=best_params['learning_rate'])
-
-    model.compile(
-        optimizer=optimizer,
-        loss='mean_squared_error',
-        metrics=['mean_absolute_error']
-    )
-
-    return model
 
 
 def save_model_info(
