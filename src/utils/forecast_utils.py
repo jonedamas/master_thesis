@@ -22,9 +22,15 @@ class ForecastModel:
 
         self.model_name = model_name
 
-        with open(f'model_archive/{self.model_name}/data_params.json', 'r') as f:
+        with open(
+            f'model_archive/{self.model_name}/data_params.json',
+            'r'
+            ) as f:
             self.data_params = json.load(f)
-        with open(f'model_archive/{self.model_name}/model_params.json', 'r') as f:
+        with open(
+            f'model_archive/{self.model_name}/model_params.json',
+            'r'
+            ) as f:
             self.model_params = json.load(f)
 
         model_comp = model_name.split('_')
