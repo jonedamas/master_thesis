@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 import json
-from sklearn.metrics import mean_squared_error, mean_absolute_error
+from sklearn.metrics import mean_squared_error, mean_absolute_error, mean_absolute_percentage_error
 
 import os
 import sys

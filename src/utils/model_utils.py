@@ -219,7 +219,7 @@ def train_RNN(
     # Configure early stopping
     early_stopping = EarlyStopping(
         monitor='val_loss',
-        patience=5,
+        patience=10,
         restore_best_weights=True,
         verbose=1
     )
@@ -317,8 +317,6 @@ def optimize_hyperparameters(
         Best hyperparameters found during optimization.
     """
 
-
-
     def objective(
             trial,
             config: dict[str, any]
@@ -360,7 +358,7 @@ def optimize_hyperparameters(
         # Early stopping
         early_stopping = EarlyStopping(
             monitor='val_loss',
-            patience=5,
+            patience=7,
             restore_best_weights=True
         )
 
