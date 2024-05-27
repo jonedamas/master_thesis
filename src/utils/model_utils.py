@@ -8,7 +8,7 @@ from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
 from sklearn.model_selection import train_test_split, TimeSeriesSplit
 
 from keras.models import Sequential
-from keras.layers import LSTM, GRU, Bidirectional, Input, Dense, Dropout, GaussianNoise
+from keras.layers import LSTM, GRU, Bidirectional, Input, Dense, GaussianNoise
 from keras.regularizers import l2
 from keras.optimizers import Adam
 from keras.callbacks import EarlyStopping
@@ -246,7 +246,7 @@ def train_RNN(
         (data_params['window_size'], len(data_params['feature_columns']))
     )
 
-    fig, ax = plt.subplots(figsize=(7, 5), dpi=200)
+    _, ax = plt.subplots(figsize=(7, 5), dpi=200)
 
     history_list = list()
 
@@ -288,7 +288,7 @@ def train_RNN(
 
 
 def optimize_hyperparameters(
-        generator: RNNGenerator,
+        future: str,
         trial_config: dict[str, any],
         data_params: dict[str, any],
         rnn_type: str,
@@ -316,6 +316,7 @@ def optimize_hyperparameters(
     dict
         Best hyperparameters found during optimization.
     """
+
 
 
     def objective(
@@ -363,12 +364,22 @@ def optimize_hyperparameters(
             restore_best_weights=True
         )
 
+        gen = RNNGenerator(future=future, CV=data_params['CV'])
+
+        gen.preprocess_data(
+            data_params['feature_columns'],
+            data_params['target_column'],
+            data_params['window_size'],
+            test_size=data_params['test_size'],
+            val_size=data_params['val_size']
+        )
+
         # Train the model
         history = model.fit(
-            generator.train_generators[-1],
+            gen.train_generators[-1],
             epochs=50,
             batch_size=int(batch_size),
-            validation_data=generator.val_generators[-1],
+            validation_data=gen.val_generators[-1],
             callbacks=[early_stopping],
             verbose=0
         )
