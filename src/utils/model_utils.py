@@ -384,7 +384,10 @@ def optimize_hyperparameters(
 
         return np.min(history.history['val_loss'])
 
-    study = optuna.create_study(direction="minimize")
+    study = optuna.create_study(
+        direction="minimize",
+        study_name=f'{rnn_type}_study'
+    )
 
     study.optimize(
         partial(objective, config=trial_config),

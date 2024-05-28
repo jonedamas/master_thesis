@@ -32,34 +32,34 @@ def plot_criterion(
     ax.legend(frameon=False, loc='upper center', title=name, fontsize=10)
 
 
-def grangers_causation_matrix(
+def grangers_causation(
         data: pd.DataFrame,
         variables: list[str],
-        test: str='ssr_chi2test',
-        verbose: bool=False,
-        maxlag: int=12
+        target: str,
+        test: str = 'ssr_chi2test',
+        verbose: bool = False,
+        maxlag: int = 4
     ) -> pd.DataFrame:
 
-    df = pd.DataFrame(
-        np.zeros((len(variables), len(variables))),
+    # Initialize an empty DataFrame to store p-values for each lag and variable
+    p_values_df = pd.DataFrame(
+        np.zeros((maxlag, len(variables))),
         columns=variables,
-        index=variables
+        index=[f'lag_{i+1}' for i in range(maxlag)]
     )
-    for c in tqdm(df.columns, desc='Granger Causality Matrix'):
-        for r in df.index:
-            test_result = grangercausalitytests(
-                data[[r, c]],
-                maxlag=maxlag,
-                verbose=False
-            )
-            p_values = [round(test_result[i+1][0][test][1], 4) for i in range(maxlag)]
-            if verbose: print(f'Y = {r}, X = {c}, P Values = {p_values}')
-            min_p_value = np.min(p_values)
-            df.loc[r, c] = min_p_value
-    df.columns = [var + '_x' for var in variables]
-    df.index = [var + '_y' for var in variables]
 
-    return df
+    for r in tqdm(variables, desc='Granger Causality Test'):
+        test_result = grangercausalitytests(
+            data[[r, target]],
+            maxlag=maxlag,
+            verbose=verbose
+        )
+        p_values = [round(test_result[i+1][0][test][1], 4) for i in range(maxlag)]
+        if verbose:
+            print(f'Y = {target}, X = {r}, P Values = {p_values}')
+        p_values_df[r] = p_values
+
+    return p_values_df.T
 
 
 class SentVAR:
