@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 import json
-from sklearn.metrics import mean_squared_error, mean_absolute_error
+from sklearn.metrics import mean_squared_error, mean_absolute_error, mean_absolute_percentage_error
 
 import os
 import sys
@@ -72,47 +72,38 @@ class ForecastModel:
             [y for _, y in self.gen.test_generator]
         ).flatten()
 
-        self.mse = mean_squared_error(
-            self.test_targets, self.test_predictions
-        )
-        self.mae = mean_absolute_error(
-            self.test_targets, self.test_predictions
-        )
-        self.mda = mean_directional_accuracy(
-            pd.Series(self.test_targets),
-            pd.Series(self.test_predictions)
-        )
-
     def describe(
             self,
+            decimals: float = 4,
             print: bool = False
         ) -> None | dict[str, any]:
 
+        metrics = calculate_metrics(
+            self.test_targets,
+            self.test_predictions,
+            decimals=decimals
+        )
+
         if print:
             print(f'Model: {self.model_name}')
-            print(f'MSE: {self.mse}')
-            print(f'MAE: {self.mae}')
-            print(f'MDA: {self.mda}')
+            for name, metric in metrics.items():
+                print(f'{name.upper()}: {metric}')
         else:
-            return {
-                'mse': self.mse,
-                'mae': self.mae,
-                'mda': self.mda
-            }
+            return metrics
 
 
 def mean_directional_accuracy(
-        y_true: pd.Series,
-        y_pred: pd.Series
+        y_true,
+        y_pred
     ) -> float:
     """
     Calculate the directional accuracy of a forecast model
 
     Parameters
     ----------
-    y_true : pd.Series
+    y_true
         The true target values
-    y_pred : pd.Series
+    y_pred
         The predicted target values
 
     Returns
@@ -120,9 +111,38 @@ def mean_directional_accuracy(
     float
         The accuracy of the model in predicting the direction of the target
     """
+    if not isinstance(y_true, pd.Series):
+        y_true = pd.Series(y_true)
+
+    if not isinstance(y_pred, pd.Series):
+        y_pred = pd.Series(y_pred)
+
+    # y_true, y_pred = y_true.align(y_pred)
+
     true_change = np.sign(y_true.diff().fillna(0))
     pred_change = np.sign((y_pred - y_true.shift()).fillna(0))
 
     accuracy = (true_change == pred_change).sum() / len(true_change)
 
     return accuracy
+
+
+def calculate_metrics(
+        y_test,
+        y_pred,
+        decimals: int = 4
+    ) -> dict[str, float]:
+
+    mse = mean_squared_error(y_test, y_pred)
+    mae = mean_absolute_error(y_test, y_pred)
+    mda = mean_directional_accuracy(y_test, y_pred)
+    rmse = np.sqrt(mse)
+
+    metric_dict = {
+        'mse': round(mse, decimals),
+        'mae': round(mae, decimals),
+        'rmse': round(rmse, decimals),
+        'mda': round(mda, decimals)
+    }
+
+    return metric_dict

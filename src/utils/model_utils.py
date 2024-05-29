@@ -89,7 +89,6 @@ def build_rnn_model(
     return model
 
 
-
 class RNNGenerator:
     def __init__(
             self,
