@@ -57,7 +57,6 @@ This folder contains all event analysis scripts. The scripts are used to identif
 
 **Files:**
 
-- event_analysis.ipynb
 - VAR.ipynb
 
 #### 6 - Feature Engineering
@@ -69,6 +68,7 @@ This folder contains all feature engineering scripts. The scripts are used to cr
 
 - data_preparation.ipynb
 - feature_selection.ipynb
+- LASSO.ipynb
 
 #### 7 - Volatility Forecasting
 

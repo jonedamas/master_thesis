@@ -1,9 +1,23 @@
 import numpy as np
 import pandas as pd
+import json
 from statsmodels.tsa.stattools import grangercausalitytests
 from statsmodels.tsa.vector_ar.var_model import VAR
+from sklearn.model_selection import train_test_split
 from tqdm.notebook import tqdm
 import matplotlib.pyplot as plt
+from typing import Callable, List, Tuple, Dict, Union
+
+import os
+import sys
+import warnings
+from dotenv import load_dotenv
+load_dotenv()
+warnings.filterwarnings("ignore")
+
+REPO_PATH= os.getenv('REPO_PATH')
+sys.path.insert(0, rf'{REPO_PATH}src')
+from utils.main_utils import load_processed
 
 
 def plot_criterion(
@@ -34,7 +48,7 @@ def plot_criterion(
 
 def grangers_causation(
         data: pd.DataFrame,
-        variables: list[str],
+        variables: List[str],
         target: str,
         test: str = 'ssr_chi2test',
         verbose: bool = False,
@@ -65,7 +79,7 @@ def grangers_causation(
 class SentVAR:
     def __init__(
             self,
-            dfs: dict[str, pd.DataFrame],
+            dfs: Dict[str, pd.DataFrame],
             topic: str,
             analyzer: str,
             lags: int = 19
@@ -135,3 +149,69 @@ class SentVAR:
         x_ticks = np.arange(0, 101, 20)
         ax.set_xticks(x_ticks)
         ax.set_xticklabels((x_ticks * 5 / 60).astype(int))
+
+
+def forecast_var(
+    model_name: str,
+    var_params: Union[None, Dict[str, any]] = None
+    ) -> dict[str, any]:
+
+    if var_params is None:
+        with open(
+            f'model_archive/{model_name}/var_params.json',
+            'r') as f:
+            var_params = json.load(f)
+
+    future = model_name.split('_')[0]
+    lags = var_params['lags']
+    features = var_params['features']
+    target = var_params['target']
+
+    df = load_processed(future)[future]
+
+    train, test = train_test_split(
+        df[features], test_size=var_params['test_size'], shuffle=False
+    )
+
+    model = VAR(train)
+
+    results = model.fit(lags)
+
+    forecasted_values = []
+    for i in tqdm(range(len(test)), desc='Forecasting with VAR'):
+        if i == 0:
+            input_data = train.values[-lags:]
+        else:
+            input_data = df[features].iloc[len(train) + i - lags:len(train) + i].values
+
+        forecast = results.forecast(input_data, steps=1)
+        forecasted_values.append(forecast[0][0])
+
+    y_test = np.array(test[target])
+    y_pred = np.array(forecasted_values)
+
+    results = {
+        'y_test': y_test,
+        'y_pred': y_pred,
+        'model': model
+    }
+
+    return results
+
+
+def save_var_info(
+    model_name: str,
+    var_params: Dict[str, any],
+    ) -> None:
+
+    if not os.path.exists(f'model_archive/{model_name}'):
+        os.makedirs(f'model_archive/{model_name}')
+
+        with open(
+            f'model_archive/{model_name}/var_params.json', 'w'
+            ) as file:
+            json.dump(var_params, file, indent=4)
+
+        print(f'Model saved as {model_name}')
+    else:
+        print('Model already exists')
