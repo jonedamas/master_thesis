@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import json
 from tqdm.notebook import tqdm
+from typing import Callable, List, Tuple, Dict, Union
 import matplotlib.pyplot as plt
 from functools import partial
 from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
@@ -25,14 +26,14 @@ sys.path.insert(0, rf'{REPO_PATH}src')
 from utils.main_utils import load_processed
 
 
-RNN_LAYERS: dict[str, any] = {
+RNN_LAYERS: Dict[str, any] = {
     'LSTM': LSTM,
     'BiLSTM': lambda units, **kwargs: Bidirectional(LSTM(units, **kwargs)),
     'GRU': GRU,
     'BiGRU': lambda units, **kwargs: Bidirectional(GRU(units, **kwargs))
 }
 
-SCALERS: dict[str, any] = {
+SCALERS: Dict[str, any] = {
     'StandardScaler': StandardScaler,
     'MinMaxScaler': MinMaxScaler,
     'RobustScaler': RobustScaler
@@ -41,8 +42,8 @@ SCALERS: dict[str, any] = {
 
 def build_rnn_model(
         rnn_type: str,
-        best_params: dict[str, any],
-        input_shape: tuple[int, int]
+        best_params: Dict[str, any],
+        input_shape: Tuple[int, int]
     ) -> Sequential:
     """
     Build RNN model based on the type and provided hyperparameters.
@@ -127,7 +128,7 @@ class RNNGenerator:
 
     def preprocess_data(
             self,
-            feature_columns: list[str],
+            feature_columns: List[str],
             target_column: str,
             window_size: int,
             test_size: float = 0.2,
@@ -209,11 +210,11 @@ class RNNGenerator:
 
 def train_RNN(
         future: str,
-        data_params: dict[str, any],
-        model_params: dict[str, any],
+        data_params: Dict[str, any],
+        model_params: Dict[str, any],
         rnn_type: str,
         max_epochs: int
-    ) -> tuple[Sequential, RNNGenerator, dict[str, any]]:
+    ) -> Tuple[Sequential, RNNGenerator, dict[str, any]]:
 
     # Configure early stopping
     early_stopping = EarlyStopping(
@@ -288,12 +289,12 @@ def train_RNN(
 
 def optimize_hyperparameters(
         future: str,
-        trial_config: dict[str, any],
-        data_params: dict[str, any],
+        trial_config: Dict[str, any],
+        data_params: Dict[str, any],
         rnn_type: str,
         n_trials: int = 50,
         n_jobs: int = -1,
-    ) -> dict[str, any]:
+    ) -> Dict[str, any]:
     """
     Optimize RNN model hyperparameters using Optuna for a given RNN type.
 
@@ -318,7 +319,7 @@ def optimize_hyperparameters(
 
     def objective(
             trial,
-            config: dict[str, any]
+            config: Dict[str, any]
         ):
         # Model configuration based on trial suggestions
         units_first_layer = trial.suggest_categorical(
@@ -400,9 +401,9 @@ def optimize_hyperparameters(
 def save_model_info(
         model: Sequential,
         model_name: str,
-        model_params: dict[str, any],
-        data_params: dict[str, any],
-        loss_dict: dict[str, any]
+        model_params: Dict[str, any],
+        data_params: Dict[str, any],
+        loss_dict: Dict[str, any]
     ) -> None:
 
     if not os.path.exists(f'model_archive/{model_name}'):
