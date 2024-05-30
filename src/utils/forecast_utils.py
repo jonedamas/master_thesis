@@ -1,7 +1,6 @@
 import numpy as np
 import pandas as pd
 from scipy.stats import norm
-from sklearn.model_selection import train_test_split
 from tqdm.notebook import tqdm
 
 from typing import Callable, List, Tuple, Dict, Union
@@ -15,7 +14,6 @@ sys.path.insert(0, rf'{REPO_PATH}src')
 
 from utils.model_utils import build_rnn_model, RNNGenerator
 from utils.eval_utils import calculate_metrics
-from utils.main_utils import load_processed
 from utils.var_utils import forecast_var
 
 
@@ -63,8 +61,8 @@ class ForecastPredictions:
                 bm_model.y_test = bm_model.y_test[diff:]
                 bm_model.y_pred = bm_model.y_pred[diff:]
 
-        e1 = np.array(self.y_pred - self.y_test)
-        e2 = np.array(bm_model.y_pred - bm_model.y_test)
+        e1 = np.array(bm_model.y_test - bm_model.y_pred)
+        e2 = np.array(self.y_test - self.y_pred)
 
         if crit == "MSE":
             d = e1**2 - e2**2
@@ -131,8 +129,7 @@ def forecast_rnn(
     rnn_type = model_comp[1]
 
     gen = RNNGenerator(
-        future,
-        data_params['CV']
+        future
     )
 
     gen.preprocess_data(

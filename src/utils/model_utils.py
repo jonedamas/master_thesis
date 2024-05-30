@@ -6,7 +6,7 @@ from typing import Callable, List, Tuple, Dict, Union
 import matplotlib.pyplot as plt
 from functools import partial
 from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
-from sklearn.model_selection import train_test_split, TimeSeriesSplit
+from sklearn.model_selection import train_test_split
 
 from keras.models import Sequential
 from keras.layers import LSTM, GRU, Bidirectional, Input, Dense, GaussianNoise
@@ -93,9 +93,7 @@ def build_rnn_model(
 class RNNGenerator:
     def __init__(
             self,
-            future: str,
-            CV: bool = False,
-            CVfolds: int = 5
+            future: str
         ):
         """
         Initialize the RNNGenerator class.
@@ -104,27 +102,21 @@ class RNNGenerator:
         ----------
         future : str
             The futures data to use.
-        CV : bool
-            Whether to use cross-validation or not.
-        CVfolds : int
-            Number of cross-validation folds.
         """
         self.future = future
-        self.CV = CV
 
         # Loading preprocessed data
         self.df = load_processed(self.future)[future]
-        self.tscv = TimeSeriesSplit(n_splits=CVfolds)
 
         self.test_dates: None | pd.DatetimeIndex = None
         self.train_dates: None | pd.DatetimeIndex = None
 
-        self.train_generators: list[any] = list()
-        self.val_generators: list[any] = list()
+        self.train_generator: list[any] = None
+        self.val_generator: list[any] = None
         self.test_generator: None | any = None
 
     def __repr__(self) -> str:
-        return f"RNNGenerator(future={self.future}), CV={self.CV})"
+        return f"RNNGenerator(future={self.future})"
 
     def preprocess_data(
             self,
@@ -176,36 +168,19 @@ class RNNGenerator:
         X_temp: np.array = self.scaler.fit_transform(X_temp)
         X_test: np.array = self.scaler.transform(X_test)
 
+        X_train, X_val, y_train, y_val = train_test_split(
+            X_temp, y_temp, test_size=val_size, shuffle=False
+        )
+
+        self.train_generator = TimeseriesGenerator(
+            X_train, y_train, length=window_size, batch_size=batch_size
+        )
+        self.val_generator = TimeseriesGenerator(
+            X_val, y_val, length=window_size, batch_size=batch_size
+        )
         self.test_generator = TimeseriesGenerator(
             X_test, y_test, length=window_size, batch_size=batch_size
         )
-
-        if self.CV:  # cross-validation
-            for train_index, val_index in self.tscv.split(X_temp):
-                # Create generators for each split
-                train_generator = TimeseriesGenerator(
-                    X_temp[train_index], y_temp[train_index],
-                    length=window_size,
-                    batch_size=batch_size
-                )
-                val_generator = TimeseriesGenerator(
-                    X_temp[val_index], y_temp[val_index],
-                    length=window_size,
-                    batch_size=batch_size
-                )
-
-                self.train_generators.append(train_generator)
-                self.val_generators.append(val_generator)
-        else:  # no cross-validation
-            X_train, X_val, y_train, y_val = train_test_split(
-                X_temp, y_temp, test_size=val_size, shuffle=False
-            )
-            self.train_generators.append(TimeseriesGenerator(
-                X_train, y_train, length=window_size, batch_size=batch_size
-            ))
-            self.val_generators.append(TimeseriesGenerator(
-                X_val, y_val, length=window_size, batch_size=batch_size
-            ))
 
 
 def train_RNN(
@@ -227,7 +202,6 @@ def train_RNN(
     # Create generatorW
     gen = RNNGenerator(
         future=future,
-        CV=data_params['CV']
     )
 
     gen.preprocess_data(
@@ -248,35 +222,22 @@ def train_RNN(
 
     _, ax = plt.subplots(figsize=(7, 5), dpi=200)
 
-    history_list = list()
+    history = model.fit(
+        gen.train_generator,
+        epochs=max_epochs,
+        batch_size=model_params['batch_size'],
+        validation_data=gen.val_generator,
+        callbacks=[early_stopping],
+        verbose=1
+    )
 
-    # Train the model with early stopping and Cross Validation
-    if len(gen.train_generators) > 1:
-        loop_range = tqdm(
-            range(len(gen.train_generators)),
-            desc='Running Cross Validation',
-        )
-    else:
-        loop_range = [0]
+    loss_dict = {
+        'train_loss': history.history['loss'],
+        'val_loss': history.history['val_loss']
+    }
 
-    for i in loop_range:
-        history = model.fit(
-            gen.train_generators[i],
-            epochs=max_epochs,
-            batch_size=model_params['batch_size'],
-            validation_data=gen.val_generators[i],
-            callbacks=[early_stopping],
-            verbose=1
-        )
-
-        loss_dict = {
-            'train_loss': history.history['loss'],
-            'val_loss': history.history['val_loss']
-        }
-
-        history_list.append(history)
-        ax.plot(loss_dict['train_loss'], label=f'Train Loss k={i + 1}')
-        ax.plot(loss_dict['val_loss'], linestyle=':', label=f'Val Loss k={i + 1}')
+    ax.plot(loss_dict['train_loss'], label=f'Train Loss')
+    ax.plot(loss_dict['val_loss'], linestyle=':', label=f'Val Loss')
 
     ax.set_yscale('log')
     ax.set_title('Model Training and Validation Loss')
@@ -322,37 +283,35 @@ def optimize_hyperparameters(
             config: Dict[str, any]
         ):
         # Model configuration based on trial suggestions
-        units_first_layer = trial.suggest_categorical(
-            'units_first_layer', config['units_first_layer']
-        )
-        units_second_layer = trial.suggest_categorical(
-            'units_second_layer', config['units_second_layer']
-        )
-        l2_strength = trial.suggest_float(
-            'l2_strength', *config['l2_strength'], log=True
-        )
-        learning_rate = trial.suggest_float(
-            'learning_rate', *config['learning_rate'], log=True
-        )
-        batch_size = trial.suggest_categorical(
-            'batch_size', config['batch_size']
-        )
-        noise_std = trial.suggest_float(
-            'noise_std', *config['noise_std']
-        )
+
+        trial_params = {
+            'units_first_layer': trial.suggest_categorical(
+                'units_first_layer', config['units_first_layer']
+            ),
+            'units_second_layer': trial.suggest_categorical(
+                'units_second_layer', config['units_second_layer']
+            ),
+            'l2_strength': trial.suggest_float(
+                'l2_strength', *config['l2_strength'], log=True
+            ),
+            'learning_rate': trial.suggest_float(
+                'learning_rate', *config['learning_rate'], log=True
+            ),
+            'batch_size': trial.suggest_categorical(
+                'batch_size', config['batch_size']
+            ),
+            'noise_std': trial.suggest_float(
+                'noise_std', *config['noise_std']
+            )
+        }
 
         # Building the model
         model = build_rnn_model(
-            rnn_type,
-            {
-                'units_first_layer': units_first_layer,
-                'units_second_layer': units_second_layer,
-                'l2_strength': l2_strength,
-                'learning_rate': learning_rate,
-                'batch_size': batch_size,
-                'noise_std': noise_std
-            },
-            (data_params['window_size'], len(data_params['feature_columns']))
+            rnn_type, trial_params,
+            (
+                data_params['window_size'],
+                len(data_params['feature_columns'])
+            )
         )
 
         # Early stopping
@@ -362,7 +321,7 @@ def optimize_hyperparameters(
             restore_best_weights=True
         )
 
-        gen = RNNGenerator(future=future, CV=data_params['CV'])
+        gen = RNNGenerator(future=future)
 
         gen.preprocess_data(
             data_params['feature_columns'],
@@ -374,10 +333,10 @@ def optimize_hyperparameters(
 
         # Train the model
         history = model.fit(
-            gen.train_generators[-1],
+            gen.train_generator,
             epochs=50,
-            batch_size=int(batch_size),
-            validation_data=gen.val_generators[-1],
+            batch_size=int(trial_params['batch_size']),
+            validation_data=gen.val_generator,
             callbacks=[early_stopping],
             verbose=0
         )
