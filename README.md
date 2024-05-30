@@ -77,7 +77,7 @@ This folder contains all volatility forecasting scripts. The scripts are used to
 
 **Files:**
 
-- fit_GARCH.ipynb
+- fit_VAR.ipynb
 - fit_RNN.ipynb
 - forecast_comparison.ipynb
 - hyperpm_tuning.ipynb
