@@ -346,13 +346,8 @@ def optimize_hyperparameters(
 
         return np.min(history.history['val_loss'])
 
-    db_path = f'hyperpm_archive/{study_name}_study.db'
-
-    if os.path.exists(db_path):
-        os.remove(db_path)
-
     study = optuna.create_study(
-        storage=f'sqlite:///{db_path}',
+        storage=f'sqlite:///hyperpm_archive/study_database.db',
         direction='minimize',
         study_name=study_name
     )
