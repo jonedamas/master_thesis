@@ -207,7 +207,7 @@ def train_RNN(
     gen.preprocess_data(
         data_params['feature_columns'],
         data_params['target_column'],
-        data_params['window_size'],
+        model_params['window_size'],
         test_size=data_params['test_size'],
         val_size=data_params['val_size'],
         scaler_type=data_params['scaler_type']
@@ -217,7 +217,7 @@ def train_RNN(
     model = build_rnn_model(
         rnn_type,
         model_params,
-        (data_params['window_size'], len(data_params['feature_columns']))
+        (model_params['window_size'], len(data_params['feature_columns']))
     )
 
     _, ax = plt.subplots(figsize=(7, 5), dpi=200)
@@ -249,6 +249,7 @@ def train_RNN(
 
 
 def optimize_hyperparameters(
+        study_name: str,
         future: str,
         trial_config: Dict[str, any],
         data_params: Dict[str, any],
@@ -302,14 +303,26 @@ def optimize_hyperparameters(
             ),
             'noise_std': trial.suggest_float(
                 'noise_std', *config['noise_std']
+            ),
+            'window_size': trial.suggest_categorical(
+                'window_size', config['window_size']
             )
         }
+
+        gen = RNNGenerator(future=future)
+        gen.preprocess_data(
+            data_params['feature_columns'],
+            data_params['target_column'],
+            trial_params['window_size'],
+            test_size=data_params['test_size'],
+            val_size=data_params['val_size']
+        )
 
         # Building the model
         model = build_rnn_model(
             rnn_type, trial_params,
             (
-                data_params['window_size'],
+                trial_params['window_size'],
                 len(data_params['feature_columns'])
             )
         )
@@ -319,16 +332,6 @@ def optimize_hyperparameters(
             monitor='val_loss',
             patience=7,
             restore_best_weights=True
-        )
-
-        gen = RNNGenerator(future=future)
-
-        gen.preprocess_data(
-            data_params['feature_columns'],
-            data_params['target_column'],
-            data_params['window_size'],
-            test_size=data_params['test_size'],
-            val_size=data_params['val_size']
         )
 
         # Train the model
@@ -343,9 +346,15 @@ def optimize_hyperparameters(
 
         return np.min(history.history['val_loss'])
 
+    db_path = f'hyperpm_archive/{study_name}_study.db'
+
+    if os.path.exists(db_path):
+        os.remove(db_path)
+
     study = optuna.create_study(
-        direction="minimize",
-        study_name=f'{rnn_type}_study'
+        storage=f'sqlite:///{db_path}',
+        direction='minimize',
+        study_name=study_name
     )
 
     study.optimize(
