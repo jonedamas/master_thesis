@@ -135,7 +135,7 @@ def forecast_rnn(
     gen.preprocess_data(
         data_params['feature_columns'],
         data_params['target_column'],
-        data_params['window_size'],
+        model_params['window_size'],
         test_size=data_params['test_size'],
         val_size=data_params['val_size'],
     )
@@ -145,7 +145,7 @@ def forecast_rnn(
         rnn_type,
         model_params,
         (
-            data_params['window_size'],
+            model_params['window_size'],
             len(data_params['feature_columns'])
         )
     )
