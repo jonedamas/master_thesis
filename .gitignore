@@ -1,6 +1,7 @@
 *.csv
 *.json
 *.h5
+*.db
 __pycache__/
 .vscode/
 .env
