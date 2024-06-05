@@ -115,8 +115,6 @@ class RNNGenerator:
         self.val_generator: list[any] = None
         self.test_generator: None | any = None
 
-    def __repr__(self) -> str:
-        return f"RNNGenerator(future={self.future})"
 
     def preprocess_data(
             self,
@@ -190,7 +188,24 @@ def train_RNN(
         rnn_type: str,
         max_epochs: int
     ) -> Tuple[Sequential, RNNGenerator, dict[str, any]]:
+    """
+    Train an RNN model on the provided data.
 
+    Parameters
+    ----------
+    future : str
+        The futures data to use.
+    data_params : dict
+        Dictionary containing data parameters.
+    model_params : dict
+        Dictionary containing model hyperparameters.
+    rnn_type : str
+        Type of RNN to use.
+    max_epochs : int
+        Maximum number of epochs to train the model.
+    early_stopp : bool
+        Whether to use early stopping.
+    """
     # Configure early stopping
     early_stopping = EarlyStopping(
         monitor='val_loss',
@@ -368,6 +383,22 @@ def save_model_info(
         data_params: Dict[str, any],
         loss_dict: Dict[str, any]
     ) -> None:
+    """
+    Save model information to disk.
+
+    Parameters
+    ----------
+    model : Sequential
+        Trained RNN model.
+    model_name : str
+        Name of the model.
+    model_params : dict
+        Dictionary containing model hyperparameters.
+    data_params : dict
+        Dictionary containing data parameters.
+    loss_dict : dict
+        Dictionary containing loss data.
+    """
 
     if not os.path.exists(f'model_archive/{model_name}'):
         os.makedirs(f'model_archive/{model_name}')
