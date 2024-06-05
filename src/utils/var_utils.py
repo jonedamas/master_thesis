@@ -29,7 +29,7 @@ def plot_criterion(
     colors = ['crimson', 'navy', 'limegreen']
 
     for k, ic in enumerate(['aic', 'bic', 'hqic']):
-        ic_info = lag_orders.ics[ic]
+        ic_info = lag_orders.ics[ic][1:]
         lags = range(len(ic_info))
         ax.plot(lags, ic_info, label=ic.upper(), color=colors[k], lw=0.8)
 
@@ -153,8 +153,9 @@ class SentVAR:
 
 def forecast_var(
     model_name: str,
-    var_params: Union[None, Dict[str, any]] = None
-    ) -> dict[str, any]:
+    var_params: Union[None, Dict[str, any]] = None,
+    return_model: bool = False
+    ) -> Union[dict[str, any], Tuple[dict[str, any], VAR]]:
 
     if var_params is None:
         with open(
@@ -196,7 +197,10 @@ def forecast_var(
         'model': model
     }
 
-    return results
+    if return_model:
+        return results, model
+    else:
+        return results
 
 
 def save_var_info(

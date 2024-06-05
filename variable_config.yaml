@@ -217,3 +217,24 @@ TOPICS_CT:
   - 'CT_2'
   - 'CT_3'
   - 'CT_4'
+S1:
+  - 'CRU_VADER_SI'
+  - 'CWP_TextBlob_SI'
+  - 'CEN_TextBlob_SI'
+  - 'CEN_VADER_SI'
+S2:
+  - 'CRU_2_VADER_SI'
+  - 'CEN_2_TextBlob_SI'
+  - 'CEN_2_VADER_SI'
+  - 'CT_3_TextBlob_SI'
+  - 'CT_3_VADER_SI'
+BASE_VAR:
+  - 'REALIZED_VOL'
+  - 'VOLUME'
+  - 'COUNT'
+  - 'LOGRET'
+TEMP_VAR:
+  - 'HOUR'
+  - 'MINUTE'
+  - 'DAY_OF_WEEK'
+  - 'DAY_OF_MONTH'
