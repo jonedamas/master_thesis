@@ -3,6 +3,7 @@ from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
 from wordcloud import WordCloud
 from tqdm.auto import tqdm
+import polars as pl
 import warnings
 
 import sys
