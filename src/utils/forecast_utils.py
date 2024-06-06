@@ -18,9 +18,13 @@ from utils.var_utils import forecast_var
 
 
 class ForecastPredictions:
-    def __init__(self, model_name: str, forecast_func: Callable):
+    def __init__(self, model_name: str):
         self.model_name = model_name
-        self.results = forecast_func(model_name)
+
+        if model_name.split('_')[1] == 'VAR':
+            self.results = forecast_var(model_name)
+        else:
+            self.results = forecast_rnn(model_name)
 
         self.model = self.results['model']
         self.y_test = self.results['y_test']
@@ -87,23 +91,18 @@ class ForecastPredictions:
 
 def load_models(
     model_names: List[str],
-    benchmark_forecast: ForecastPredictions
+    benchmark_forecast: ForecastPredictions,
+    dm_crit: str = 'MSE'
     ) -> Tuple[Dict, pd.DataFrame]:
 
     metric_list = []
     model_dict = dict()
     for model_name in tqdm(model_names, desc='Loading models'):
-        model_type = model_name.split('_')[1]
 
-        if model_type == 'VAR':
-            func = forecast_var
-        else:
-            func = forecast_rnn
-
-        fc_model = ForecastPredictions(model_name, func)
+        fc_model = ForecastPredictions(model_name)
         model_dict[model_name] = fc_model
         metric_dict = fc_model.metrics(decimals=4)
-        metric_dict.update(fc_model.dm_test(benchmark_forecast))
+        metric_dict.update(fc_model.dm_test(benchmark_forecast, dm_crit))
         metric_list.append(metric_dict)
 
     metric_df = pd.DataFrame(metric_list, index=model_names)

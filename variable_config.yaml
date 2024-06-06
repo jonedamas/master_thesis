@@ -117,13 +117,6 @@ SENT_CT:
   - 'CT_2_VADER_SI'
   - 'CT_3_TextBlob_SI'
   - 'CT_3_VADER_SI'
-SELECTED_5:
-  - 'CWP_2_TextBlob_SI'
-  - 'CWP_1_TextBlob_SI'
-  - 'CWP_2_TextBlob_SI'
-  - 'CT_0_TextBlob_SI'
-  - 'CT_3_TextBlob_SI'
-  - 'CWP_TextBlob_SI'
 VAR_TOPICS:
   - 'REALIZED_VOL'
   - 'CRU_TextBlob'
@@ -228,6 +221,16 @@ S2:
   - 'CEN_2_VADER_SI'
   - 'CT_3_TextBlob_SI'
   - 'CT_3_VADER_SI'
+S3:
+  - 'CWP_0_VADER_SI'
+  - 'CWP_1_TextBlob_SI'
+  - 'CWP_1_VADER_SI'
+  - 'CT_2_TextBlob_SI'
+  - 'CT_2_VADER_SI'
+S4:
+  - 'CRU_1_TextBlob_SI'
+  - 'CT_4_VADER_SI'
+  - 'CT_4_TextBlob_SI'
 BASE_VAR:
   - 'REALIZED_VOL'
   - 'VOLUME'
