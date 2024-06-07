@@ -2,6 +2,7 @@ import os
 import subprocess
 import pandas as pd
 import json
+import yaml
 
 import os
 from dotenv import load_dotenv
@@ -63,6 +64,27 @@ def combload_topic_dfs(
         df['cross_topic'] = df['storyId'].map(crosstopic_dict)
 
     return df
+
+
+def load_variables(
+    file: str = 'variable_config.yaml'
+    ) -> dict[str, str]:
+    """
+    Load the variable configuration from the given file.
+
+    Parameters
+    ----------
+        file: str
+            The file to load the variable configuration from.
+
+    Returns
+    -------
+        dict[str, str]
+    """
+    with open(f'{REPO_PATH}{file}', 'r') as file:
+        var_config = yaml.load(file, Loader=yaml.FullLoader)
+
+    return var_config
 
 
 def save_path(
