@@ -1,5 +1,7 @@
 # Master Thesis Repository
 
+![image](src/7%20Volatility%20Forecasting/images/BT_FIT.png)
+
 ## Repository structure
 
 ### src
