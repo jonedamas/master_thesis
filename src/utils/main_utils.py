@@ -1,13 +1,34 @@
-import os
-import subprocess
 import pandas as pd
-import json
-import yaml
+from IPython.display import display, HTML
 
 import os
+import subprocess
+import json
+import yaml
+import os
 from dotenv import load_dotenv
+
 load_dotenv()
 REPO_PATH= os.getenv('REPO_PATH')
+
+
+def apply_nb_style() -> None:
+    display(
+        HTML(
+        """
+        <style>
+        .cell-output-ipywidget-background {
+            background-color: transparent !important;
+        }
+        :root {
+            --jp-widgets-color: var(--vscode-editor-foreground);
+            --jp-widgets-font-size: var(--vscode-editor-font-size);
+        }
+        </style>
+        """
+        )
+    )
+
 
 def combload_topic_dfs(
         topics: list[str] | tuple[str],
