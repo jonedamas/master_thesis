@@ -1,6 +1,8 @@
 import pandas as pd
 import numpy as np
 from sklearn.metrics import mean_squared_error, mean_absolute_error
+import optuna
+import sqlite3
 
 
 def mean_directional_accuracy(
@@ -60,3 +62,59 @@ def calculate_metrics(
     }
 
     return metric_dict
+
+
+def create_importance_df(
+        file_loc: str
+    ) -> pd.DataFrame:
+
+    def get_importance(
+            study_name: str,
+            loc: str
+        ) -> pd.Series | None:
+        try:
+            study = optuna.load_study(
+                study_name=study_name,
+                storage=f'sqlite:///{loc}'
+            )
+
+            importance = pd.Series(
+                optuna.importance.get_param_importances(study)
+            )
+            return importance
+
+        except:
+            return None
+
+    con = sqlite3.connect(file_loc)
+    cur = con.cursor()
+
+    table_list = [a[0] for a in cur.execute(
+        "SELECT name FROM sqlite_master WHERE type = 'table'"
+        )
+    ]
+
+    table_dict = dict()
+
+    for table in table_list:
+        param_df = pd.read_sql_query(
+            f"SELECT * from {table}",
+            con
+        )
+        table_dict[table] = param_df
+
+    con.close()
+
+    params_dict = {}
+
+    for study_name in table_dict['studies']['study_name']:
+        importance = get_importance(study_name, file_loc)
+        std_name = ' '.join(study_name.split('_')[0:3])
+        if importance is not None:
+            importance['model_type'] = study_name.split('_')[1]
+
+            params_dict[std_name] = importance
+
+    params_df = pd.DataFrame(params_dict).T
+
+    return params_df
