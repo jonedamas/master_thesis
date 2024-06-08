@@ -1,5 +1,7 @@
 # Master Thesis Repository
 
+## Incorporating News Sentiment in Intraday Crude Oil Futures Price Volatility Forecasting Using Deep Recurrent Neural Networks
+
 ![image](src/7%20Volatility%20Forecasting/images/BT_FIT.png)
 
 ## Repository structure
