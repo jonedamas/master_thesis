@@ -3,14 +3,38 @@ import seaborn as sns
 import pandas as pd
 
 import json
+from typing import List, Union
+import os
+import sys
+from dotenv import load_dotenv
+load_dotenv()
+REPO_PATH= os.getenv('REPO_PATH')
+sys.path.insert(0, rf'{REPO_PATH}src')
 
+from utils.text_utils import create_wordcloud
 
 def plot_fit(
-        model_dict: list[str],
-        model_labels: list[str] = None,
+        model_dict: List[str],
+        model_labels: Union[None, List[str]] = None,
         view: int = 400
     ) -> plt.Figure:
+    """
+    Plot the fit of the models in the model dictionary.
 
+    Parameters
+    ----------
+    model_dict
+        The dictionary of models to plot
+    model_labels
+        The labels for the models
+    view
+        The number of data points to view
+
+    Returns
+    -------
+    plt.Figure
+        The plot of the model fits
+    """
     fig, ax = plt.subplots(figsize=(10, 5), dpi=200)
 
     colors = sns.color_palette('bright', n_colors=len(model_dict))
@@ -46,12 +70,26 @@ def plot_fit(
 
 
 def plot_loss(
-        model_names: list[str],
-        model_labels: list[str] = None,
+        model_names: List[str],
+        model_labels: Union[None, List[str]] = None,
     ) -> plt.Figure:
+    """
+    Plot the training and validation loss of the models.
 
-    if model_labels is None:
-        model_labels = model_names
+    Parameters
+    ----------
+    model_names
+        The names of the models to plot
+    model_labels
+        The labels for the models
+
+    Returns
+    -------
+    plt.Figure
+        The plot of the training and validation loss
+    """
+
+    model_labels = model_names if model_labels is None else model_labels
 
     loss_df_list= list()
     for i, model_name in enumerate(model_names):
@@ -70,7 +108,12 @@ def plot_loss(
     fig, ax = plt.subplots(figsize=(9, 5), dpi=200)
     model_lines = []
     for i, model_name in enumerate(model_names):
-        ax.plot(loss_df.index, loss_df[f'train_loss_{model_name}'], color=colors[i], linestyle='--')
+        ax.plot(
+            loss_df.index,
+            loss_df[f'train_loss_{model_name}'],
+            color=colors[i],
+            linestyle='--'
+        )
         line = ax.plot(
             loss_df.index,
             loss_df[f'val_loss_{model_name}'],
@@ -79,7 +122,6 @@ def plot_loss(
         )
         model_lines.append(line[0])
 
-    # First legend for models
     first_legend = ax.legend(
         handles=model_lines,
         loc='upper right',
@@ -107,9 +149,20 @@ def plot_loss(
     return fig
 
 
-def plot_importance(
-        importance_df: pd.DataFrame
-    ) -> plt.Figure:
+def plot_importance(importance_df: pd.DataFrame) -> plt.Figure:
+    """
+    Plot the importance of the hyperparameters for each model.
+
+    Parameters
+    ----------
+    importance_df
+        The DataFrame of the importance of the hyperparameters
+
+    Returns
+    -------
+    plt.Figure
+        The plot of the hyperparameter importance
+    """
 
     model_order = ['LSTM', 'GRU', 'BiLSTM', 'BiGRU']
 
@@ -122,6 +175,7 @@ def plot_importance(
         'noise_std',
         'window_size'
     ]
+
     mean_df = importance_df.groupby('model_type').mean()
     mean_df = mean_df[bar_order]
 
@@ -143,5 +197,62 @@ def plot_importance(
     handles, labels = ax.get_legend_handles_labels()
     labels = [label.replace('_', ' ').capitalize() for label in labels]
     ax.legend(handles, labels, frameon=False, ncol=4, loc='upper left', fontsize=12)
+
+    return fig
+
+
+def create_sent_wc(
+        df: pd.DataFrame,
+        topic: str,
+        analyzer: str,
+        conditions: List[any],
+    ) -> plt.Figure:
+    """
+    Create a word cloud for the sentiment analysis of the given topic.
+
+    Parameters
+    ----------
+    df
+        The DataFrame of the sentiment analysis
+    topic
+        The topic of the sentiment analysis
+    analyzer
+        The sentiment analyzer used
+    conditions
+        The conditions for the sentiment analysis
+
+    Returns
+    -------
+    plt.Figure
+        The word cloud of the sentiment analysis
+    """
+    title = {
+        'vader': 'VADER',
+        'textblob': 'TextBlob'
+    }
+    cond_names = [
+            'Negative sentiment',
+            'Neutral sentiment',
+            'Positive sentiment'
+    ]
+    N = len(df)
+    print(f'{topic} - {title[analyzer]}')
+
+    fig, axs = plt.subplots(1, 3, facecolor=None, figsize=(12, 4), dpi=200)
+    for i, ax in enumerate(axs.flatten()):
+        filtered_word_series = df[conditions[i]]['word']
+        n = len(filtered_word_series)
+        print(f'{cond_names[i]}: {n}, ({n/N:.2%})')
+        wordcloud = create_wordcloud(filtered_word_series, height=400)
+        ax.imshow(wordcloud, interpolation='bilinear')
+        ax.set_title(f'{cond_names[i]}', y=-0.15, fontsize=19, loc='center')
+        ax.axis("off")
+
+    print()
+    fig.text(
+            0.00, 1.08, f'{topic} - {title[analyzer]}', fontsize=22,
+            color='darkslategrey', transform=axs[0].transAxes
+        )
+    fig.tight_layout(pad=3)
 
     return fig

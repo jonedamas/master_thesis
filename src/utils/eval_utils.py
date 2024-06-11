@@ -1,14 +1,14 @@
 import pandas as pd
 import numpy as np
-from sklearn.metrics import mean_squared_error, mean_absolute_error
+from sklearn.metrics import mean_squared_error, mean_absolute_error, mean_absolute_percentage_error
+from scipy.stats import skew, kurtosis
 import optuna
 import sqlite3
 
+from typing import Dict, Union
 
-def mean_directional_accuracy(
-        y_true,
-        y_pred
-    ) -> float:
+
+def mean_directional_accuracy(y_true: any, y_pred: any) -> float:
     """
     Calculate the directional accuracy of a forecast model
 
@@ -41,16 +41,35 @@ def mean_directional_accuracy(
 
 
 def calculate_metrics(
-        y_test,
-        y_pred,
+        y_test: any,
+        y_pred: any,
         decimals: int = 4
-    ) -> dict[str, float]:
+    ) -> Dict[str, float]:
     """
     Calculate the mean squared error, mean absolute error, and mean directional accuracy.
+
+    Parameters
+    ----------
+    y_test
+        The true target values
+    y_pred
+        The predicted target values
+    decimals
+        The number of decimal places to round the metrics to
+
+    Returns
+    -------
+    dict[str, float]
+        A dictionary of the calculated metrics
     """
+    threshold = 1e-6
+    mask = y_test >= threshold
+    y_test_filtered = y_test[mask]
+    y_pred_filtered = y_pred[mask]
 
     mse = mean_squared_error(y_test, y_pred)
     mae = mean_absolute_error(y_test, y_pred)
+    mape = mean_absolute_percentage_error(y_test_filtered, y_pred_filtered)
     mda = mean_directional_accuracy(y_test, y_pred)
     rmse = np.sqrt(mse)
 
@@ -58,20 +77,29 @@ def calculate_metrics(
         'mse': round(mse, decimals),
         'mae': round(mae, decimals),
         'rmse': round(rmse, decimals),
-        'mda': round(mda, decimals)
+        'mda': round(mda, decimals),
+        'mape': round(mape, decimals)
     }
 
     return metric_dict
 
 
-def create_importance_df(
-        file_loc: str
-    ) -> pd.DataFrame:
+def create_importance_df(file_loc: str) -> pd.DataFrame:
+    """
+    Create a DataFrame of the importance of each parameter in each study
 
-    def get_importance(
-            study_name: str,
-            loc: str
-        ) -> pd.Series | None:
+    Parameters
+    ----------
+    file_loc
+        The location of the SQLite database file
+
+    Returns
+    -------
+    pd.DataFrame
+        A DataFrame of the importance of each parameter in each study
+    """
+
+    def get_importance(study_name: str,loc: str) -> Union[pd.Series, None]:
         try:
             study = optuna.load_study(
                 study_name=study_name,
@@ -118,3 +146,24 @@ def create_importance_df(
     params_df = pd.DataFrame(params_dict).T
 
     return params_df
+
+
+def describe_df(input_series: pd.Series) -> pd.DataFrame:
+    """
+    Create a DataFrame of descriptive statistics for a series
+
+    Parameters
+    ----------
+    input_series
+        The series to describe
+
+    Returns
+    -------
+    pd.DataFrame
+        A DataFrame of the descriptive statistics
+    """
+    ddf = pd.DataFrame(input_series.describe()).T
+    ddf['skew'] = skew(input_series.dropna())
+    ddf['kurtosis'] = kurtosis(input_series.dropna())
+
+    return ddf

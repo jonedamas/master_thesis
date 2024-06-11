@@ -1,8 +1,8 @@
 import pandas as pd
 from IPython.display import display, HTML
 
+from typing import List, Tuple, Dict, Callable, Union
 import os
-import subprocess
 import json
 import yaml
 import os
@@ -13,6 +13,9 @@ REPO_PATH= os.getenv('REPO_PATH')
 
 
 def apply_nb_style() -> None:
+    """
+    Apply the notebook style to the output.
+    """
     display(
         HTML(
         """
@@ -31,8 +34,8 @@ def apply_nb_style() -> None:
 
 
 def combload_topic_dfs(
-        topics: list[str] | tuple[str],
-        url_function: callable,
+        topics: Union[List[str], Tuple[str]],
+        url_function: Callable,
         include_topic: bool = False
     ) -> pd.DataFrame:
     """
@@ -68,7 +71,9 @@ def combload_topic_dfs(
             raise ValueError('File type not supported.')
 
         if include_topic:
-            with open(f'{REPO_PATH}data/topic_data/{topic}_TOPICS.json', 'r') as file:
+            with open(
+                f'{REPO_PATH}data/topic_data/{topic}_TOPICS.json', 'r'
+                ) as file:
                 topic_dict = json.load(file)
 
             topic_df['LDA_topic'] = topic_df['storyId'].map(topic_dict)
@@ -87,9 +92,7 @@ def combload_topic_dfs(
     return df
 
 
-def load_variables(
-    file: str = 'variable_config.yaml'
-    ) -> dict[str, str]:
+def load_variables(file: str='variable_config.yaml') -> Dict[str, str]:
     """
     Load the variable configuration from the given file.
 
@@ -108,50 +111,7 @@ def load_variables(
     return var_config
 
 
-def save_path(
-        relative_path: str,
-        filename: str
-    ) -> str:
-    '''
-    Returns the absolute path to save a file in the repository.
-
-    Parameters
-    ----------
-        relative_path (str): The relative path to the file.
-        filename (str): The name of the file.
-
-    Returns
-    -------
-        str: The absolute path to save the file.
-    '''
-    repo_root = subprocess.check_output("git rev-parse --show-toplevel", shell=True).decode('utf-8').strip()
-    save_path = os.path.join(repo_root, relative_path, filename)
-
-    return save_path
-
-
-def load_df(
-        data_folder: str,
-        filename: str
-    ) -> pd.DataFrame:
-    '''
-    Loads a news DataFrame from the repository and setting index to datetime.
-
-    Parameters
-    ----------
-        path (str): The relative path to the news DataFrame.
-
-    Returns
-    -------
-        pd.DataFrame: The news DataFrame.
-    '''
-    df = pd.read_csv(fr'C:\Users\joneh\master_thesis\data\{data_folder}\{filename}')
-    df.index = pd.to_datetime(df['datetime']).dt.tz_localize(None)
-    df.drop(columns=['datetime'], inplace=True)
-
-    return df
-
-def load_json(file_path: str) -> dict[str, str]:
+def load_json(file_path: str) -> Dict[str, str]:
     '''Loads a JSON file as dictionary.
 
     Parameters
@@ -165,14 +125,12 @@ def load_json(file_path: str) -> dict[str, str]:
             The JSON file as dictionary.
     '''
     with open(file_path, 'r') as file:
-        dictionary: dict[str, str] = json.load(file)
+        dictionary = json.load(file)
 
     return dictionary
 
 
-def load_processed(
-        futures: str | list[str]
-    ) -> dict[str, pd.DataFrame]:
+def load_processed(futures: Union[str, list[str]]) -> Dict[str, pd.DataFrame]:
     """
     Load the processed data for the given futures.
 

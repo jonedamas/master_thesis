@@ -1,8 +1,5 @@
 import numpy as np
-import pandas as pd
-import json
-from tqdm.notebook import tqdm
-from typing import Callable, List, Tuple, Dict, Union
+import optuna
 import matplotlib.pyplot as plt
 from functools import partial
 from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
@@ -15,7 +12,8 @@ from keras.optimizers import Adam
 from keras.callbacks import EarlyStopping
 from keras.preprocessing.sequence import TimeseriesGenerator
 
-import optuna
+from typing import List, Tuple, Dict
+import json
 import os
 import sys
 from dotenv import load_dotenv
@@ -56,7 +54,6 @@ def build_rnn_model(
     Returns:
     - model: Compiled TensorFlow/Keras model.
     """
-    # Selecting the model type
     if rnn_type in RNN_LAYERS:
         rnn_layer = RNN_LAYERS[rnn_type]
     else:
@@ -78,7 +75,6 @@ def build_rnn_model(
         Dense(1, activation='linear')
     ])
 
-    # Compile the model
     optimizer = Adam(learning_rate=best_params['learning_rate'])
 
     model.compile(
@@ -91,10 +87,7 @@ def build_rnn_model(
 
 
 class RNNGenerator:
-    def __init__(
-            self,
-            future: str
-        ):
+    def __init__(self, future: str):
         """
         Initialize the RNNGenerator class.
 
@@ -105,16 +98,12 @@ class RNNGenerator:
         """
         self.future = future
 
-        # Loading preprocessed data
         self.df = load_processed(self.future)[future]
 
-        self.test_dates: None | pd.DatetimeIndex = None
-        self.train_dates: None | pd.DatetimeIndex = None
-
-        self.train_generator: list[any] = None
-        self.val_generator: list[any] = None
-        self.test_generator: None | any = None
-
+        self.test_dates, self.train_dates = None, None
+        self.train_generator = None
+        self.val_generator = None
+        self.test_generator = None
 
     def preprocess_data(
             self,
@@ -146,11 +135,9 @@ class RNNGenerator:
         scaler_type : str
             Type of scaler to use.
         """
-        # Select features and target
-        X: pd.Series = self.df[feature_columns]
-        y: pd.Series = self.df[target_column]
+        X = self.df[feature_columns]
+        y = self.df[target_column]
 
-        # scale data
         if scaler_type in SCALERS:
             self.scaler = SCALERS[scaler_type]()
         else:
@@ -163,8 +150,8 @@ class RNNGenerator:
         self.train_dates = X_temp.index
         self.test_dates = X_test.index
 
-        X_temp: np.array = self.scaler.fit_transform(X_temp)
-        X_test: np.array = self.scaler.transform(X_test)
+        X_temp = self.scaler.fit_transform(X_temp)
+        X_test = self.scaler.transform(X_test)
 
         X_train, X_val, y_train, y_val = train_test_split(
             X_temp, y_temp, test_size=val_size, shuffle=False
@@ -206,7 +193,6 @@ def train_RNN(
     early_stopp : bool
         Whether to use early stopping.
     """
-    # Configure early stopping
     early_stopping = EarlyStopping(
         monitor='val_loss',
         patience=10,
@@ -214,7 +200,6 @@ def train_RNN(
         verbose=1
     )
 
-    # Create generatorW
     gen = RNNGenerator(
         future=future,
     )
@@ -228,7 +213,6 @@ def train_RNN(
         scaler_type=data_params['scaler_type']
     )
 
-    # Build the model
     model = build_rnn_model(
         rnn_type,
         model_params,
@@ -294,11 +278,7 @@ def optimize_hyperparameters(
         Best hyperparameters found during optimization.
     """
 
-    def objective(
-            trial,
-            config: Dict[str, any]
-        ):
-        # Model configuration based on trial suggestions
+    def objective(trial, config: Dict[str, any]):
 
         trial_params = {
             'units_first_layer': trial.suggest_categorical(
@@ -333,7 +313,6 @@ def optimize_hyperparameters(
             val_size=data_params['val_size']
         )
 
-        # Building the model
         model = build_rnn_model(
             rnn_type, trial_params,
             (
@@ -342,14 +321,12 @@ def optimize_hyperparameters(
             )
         )
 
-        # Early stopping
         early_stopping = EarlyStopping(
             monitor='val_loss',
             patience=7,
             restore_best_weights=True
         )
 
-        # Train the model
         history = model.fit(
             gen.train_generator,
             epochs=50,

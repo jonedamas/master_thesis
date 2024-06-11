@@ -3,7 +3,7 @@ import pandas as pd
 from scipy.stats import norm
 from tqdm.notebook import tqdm
 
-from typing import Callable, List, Tuple, Dict, Union
+from typing import List, Tuple, Dict
 import json
 import os
 import sys
@@ -19,6 +19,14 @@ from utils.var_utils import forecast_var
 
 class ForecastPredictions:
     def __init__(self, model_name: str):
+        """
+        Load the predictions from a forecast model
+
+        Parameters
+        ----------
+        model_name
+            The name of the model to load
+        """
         self.model_name = model_name
 
         if model_name.split('_')[1] == 'VAR':
@@ -35,7 +43,22 @@ class ForecastPredictions:
             decimals: float = 4,
             print_metrics: bool = False
         ) -> None | dict[str, any]:
+        """
+        Calculate the mean squared error, mean absolute error,
+        and mean directional accuracy.
 
+        Parameters
+        ----------
+        decimals
+            The number of decimal places to round the metrics to
+        print_metrics
+            Whether to print the metrics or return them
+
+        Returns
+        -------
+        None | dict[str, any]
+            Metrics for the forecast model
+        """
         metrics = calculate_metrics(
             self.y_test,
             self.y_pred,
@@ -54,8 +77,22 @@ class ForecastPredictions:
             bm_model: 'ForecastPredictions',
             crit: str = 'MSE'
         ) -> Dict[str, float]:
+        """
+        Perform the Diebold-Mariano test on the model and the benchmark model.
 
-        # remove the difference allowing comparison between RNN and other models
+        Parameters
+        ----------
+        bm_model
+            The benchmark model to compare to
+        crit
+            The criterion to use for the test
+
+        Returns
+        -------
+        dict[str, float]
+            The Diebold-Mariano test statistic and p-value
+        """
+
         if len(self.y_test) != len(bm_model.y_test):
             diff = abs(len(self.y_test) - len(bm_model.y_test))
             if len(self.y_test) > len(bm_model.y_test):
@@ -94,6 +131,23 @@ def load_models(
     benchmark_forecast: ForecastPredictions,
     dm_crit: str = 'MSE'
     ) -> Tuple[Dict, pd.DataFrame]:
+    """
+    Load the forecast models and calculate the metrics for each model.
+
+    Parameters
+    ----------
+    model_names
+        The names of the models to load
+    benchmark_forecast
+        The benchmark forecast to compare to
+    dm_crit
+        The criterion to use for the Diebold-Mariano test
+
+    Returns
+    -------
+    Tuple[Dict, pd.DataFrame]
+        A dictionary of the models and a DataFrame of the metrics
+    """
 
     metric_list = []
     model_dict = dict()
@@ -110,10 +164,20 @@ def load_models(
     return model_dict, metric_df
 
 
-def forecast_rnn(
-    model_name: str
-    ) -> Dict[str, any]:
+def forecast_rnn(model_name: str) -> Dict[str, any]:
+    """
+    Forecast using an RNN model.
 
+    Parameters
+    ----------
+    model_name
+        The name of the RNN model to forecast with
+
+    Returns
+    -------
+    Dict[str, any]
+        The forecast results
+    """
     with open(
         f'model_archive/{model_name}/data_params.json',
         'r') as f:
@@ -127,9 +191,7 @@ def forecast_rnn(
     future = model_comp[0]
     rnn_type = model_comp[1]
 
-    gen = RNNGenerator(
-        future
-    )
+    gen = RNNGenerator(future)
 
     gen.preprocess_data(
         data_params['feature_columns'],
@@ -139,10 +201,7 @@ def forecast_rnn(
         val_size=data_params['val_size'],
     )
 
-    # Build the model
-    model = build_rnn_model(
-        rnn_type,
-        model_params,
+    model = build_rnn_model(rnn_type, model_params,
         (
             model_params['window_size'],
             len(data_params['feature_columns'])

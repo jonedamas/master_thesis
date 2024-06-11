@@ -3,18 +3,16 @@ from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
 from wordcloud import WordCloud
 from tqdm.auto import tqdm
-import polars as pl
-import warnings
 
 import sys
 import os
+from typing import List, Dict, Tuple, Union
 from dotenv import load_dotenv
 
 load_dotenv()
-
 REPO_PATH =  os.getenv('REPO_PATH')
-
 sys.path.insert(0, rf'{REPO_PATH}src')
+
 from utils.sentiment_utils import add_vader_compound, add_textblob_polarity
 
 
@@ -31,9 +29,7 @@ IGNORE_WORDS = set(
 stop_words = NLTK_STOP_WORDS.union(IGNORE_WORDS)
 
 
-def clean_tokens(
-        tokens: list[str]
-    ) -> list[str]:
+def clean_tokens(tokens: List[str]) -> List[str]:
     """
     Clean a list of tokens by removing punctuation and stopwords.
 
@@ -46,8 +42,8 @@ def clean_tokens(
     -------
         list[str]: The cleaned list of tokens.
     """
-    tokens_wo_punct: list = [word for word in tokens if word.isalnum()]
-    tokens_wo_sw: list = [word for word in tokens_wo_punct if word.lower() not in stop_words]
+    tokens_wo_punct = [word for word in tokens if word.isalnum()]
+    tokens_wo_sw = [word for word in tokens_wo_punct if word.lower() not in stop_words]
 
     return tokens_wo_sw
 
@@ -55,7 +51,7 @@ def clean_tokens(
 def clean_token_series(
         series: pd.Series,
         include_raw: bool = False
-    ) -> pd.Series | tuple[pd.Series, pd.Series]:
+    ) -> Union[pd.Series, Tuple[pd.Series, pd.Series]]:
     """
     Tokenize and clean a pandas Series of text.
 
@@ -70,9 +66,9 @@ def clean_token_series(
 
     """
     tqdm.pandas(desc=f"Tokenization progress for {series.name}")
-    tokenized: pd.Series = series.progress_apply(word_tokenize)
+    tokenized = series.progress_apply(word_tokenize)
     tqdm.pandas(desc=f"Cleaning progress for {series.name}")
-    cleaned_tokenized: pd.Series = tokenized.progress_apply(clean_tokens)
+    cleaned_tokenized = tokenized.progress_apply(clean_tokens)
 
     if include_raw:
         return tokenized, cleaned_tokenized
@@ -80,10 +76,7 @@ def clean_token_series(
         return cleaned_tokenized
 
 
-def create_word_df(
-    df: pd.DataFrame,
-    topic: str
-    ) -> dict[str, pd.DataFrame]:
+def create_word_df(df: pd.DataFrame, topic: str) -> Dict[str, pd.DataFrame]:
     """
     Create a DataFrame of words and their counts for a given topic.
 

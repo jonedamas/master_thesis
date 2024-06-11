@@ -2,7 +2,9 @@
 
 ## Incorporating News Sentiment in Intraday Crude Oil Futures Price Volatility Forecasting Using Deep Recurrent Neural Networks
 
-![image](src/7%20Volatility%20Forecasting/images/BT_FIT.png)
+## Methodology
+
+![image](src\2%20Data%20Cleaning%20and%20EDA\images\overview.png)
 
 ## Repository structure
 
@@ -85,6 +87,8 @@ This folder contains all volatility forecasting scripts. The scripts are used to
 - fit_RNN.ipynb
 - forecast_comparison.ipynb
 - hyperpm_tuning.ipynb
+
+![image](src/7%20Volatility%20Forecasting/images/BT_FIT.png)
 
 #### utils
 

@@ -1,30 +1,40 @@
 import numpy as np
 import pandas as pd
-import json
 from statsmodels.tsa.stattools import grangercausalitytests
 from statsmodels.tsa.vector_ar.var_model import VAR
 from sklearn.model_selection import train_test_split
 from tqdm.notebook import tqdm
 import matplotlib.pyplot as plt
-from typing import Callable, List, Tuple, Dict, Union
 
+from typing import List, Tuple, Dict, Union
 import os
 import sys
+import json
 import warnings
 from dotenv import load_dotenv
-load_dotenv()
-warnings.filterwarnings("ignore")
 
+load_dotenv()
 REPO_PATH= os.getenv('REPO_PATH')
 sys.path.insert(0, rf'{REPO_PATH}src')
+
 from utils.main_utils import load_processed
 
+warnings.filterwarnings("ignore")
 
-def plot_criterion(
-        lag_orders: int,
-        ax: plt.Axes,
-        name: str
-    ) -> None:
+
+def plot_criterion(lag_orders: int, ax: plt.Axes, name: str) -> None:
+    """
+    Plot the AIC, BIC, and HQIC criterion for the given lag orders.
+
+    Parameters
+    ----------
+    lag_orders
+        The lag orders to plot
+    ax
+        The axis to plot on
+    name
+        The name of the model
+    """
 
     colors = ['crimson', 'navy', 'limegreen']
 
@@ -35,7 +45,6 @@ def plot_criterion(
 
         min_ic = np.argmin(ic_info)
         ax.plot(min_ic, ic_info[min_ic], 'ro', color=colors[k])
-        # annotate the min point
         ax.annotate(
             f'{min_ic}', (min_ic, ic_info[min_ic]),
             textcoords="offset points", xytext=(0, 10),
@@ -54,8 +63,30 @@ def grangers_causation(
         verbose: bool = False,
         maxlag: int = 4
     ) -> pd.DataFrame:
+    """
+    Perform the Granger Causality Test on the given data.
 
-    # Initialize an empty DataFrame to store p-values for each lag and variable
+    Parameters
+    ----------
+    data
+        The DataFrame containing the data
+    variables
+        The list of variables to test
+    target
+        The target variable
+    test
+        The test to perform
+    verbose
+        Whether to print the results
+    maxlag
+        The maximum lag to test
+
+    Returns
+    -------
+    pd.DataFrame
+        The DataFrame containing the p-values of the test
+    """
+
     p_values_df = pd.DataFrame(
         np.zeros((maxlag, len(variables))),
         columns=variables,
@@ -84,6 +115,20 @@ class SentVAR:
             analyzer: str,
             lags: int = 19
         ):
+        """
+        Set up the VAR model for structural sentiment analysis.
+
+        Parameters
+        ----------
+        dfs
+            The DataFrames to use
+        topic
+            The topic of the model
+        analyzer
+            The sentiment analyzer used
+        lags
+            The number of lags to use
+        """
         self.dfs = dfs.copy()
         self.topic = topic
 
@@ -120,10 +165,7 @@ class SentVAR:
                 'axes_list': fig.axes[:2]
             }
 
-    def plot_irf(
-            self,
-            ax: plt.Axes
-        ) -> None:
+    def plot_irf(self, ax: plt.Axes) -> None:
 
         linestyles = {'CLc1': '-', 'LCOc1': '--'}
 
@@ -156,7 +198,23 @@ def forecast_var(
     var_params: Union[None, Dict[str, any]] = None,
     return_model: bool = False
     ) -> Union[dict[str, any], Tuple[dict[str, any], VAR]]:
+    """
+    Forecast the VAR model.
 
+    Parameters
+    ----------
+    model_name
+        The name of the model
+    var_params
+        The parameters of the model
+    return_model
+        Whether to return the model
+
+    Returns
+    -------
+    dict[str, any] | Tuple[dict[str, any], VAR]
+        The results of the forecast
+    """
     if var_params is None:
         with open(
             f'model_archive/{model_name}/var_params.json',
@@ -203,11 +261,17 @@ def forecast_var(
         return results
 
 
-def save_var_info(
-    model_name: str,
-    var_params: Dict[str, any],
-    ) -> None:
+def save_var_info(model_name: str, var_params: Dict[str, any]) -> None:
+    """
+    Save the VAR model information.
 
+    Parameters
+    ----------
+    model_name
+        The name of the model
+    var_params
+        The parameters of the model
+    """
     if not os.path.exists(f'model_archive/{model_name}'):
         os.makedirs(f'model_archive/{model_name}')
 
