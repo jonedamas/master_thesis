@@ -3,10 +3,12 @@ from nltk.sentiment.vader import SentimentIntensityAnalyzer
 from textblob import TextBlob
 from tqdm.auto import tqdm
 
+from typing import Union
+
 
 def add_textblob_polarity(
         text_series: pd.Series,
-        name: str | None = None
+        name: Union[None, str] = None
     ) -> pd.Series:
     """
     Add TextBlob polarity scores to a text series
@@ -23,7 +25,7 @@ def add_textblob_polarity(
     """
     object_name = text_series.name if name is None else name
     tqdm.pandas(desc=f"Textblob progress for {object_name}")
-    polarity_scores: pd.Series = text_series.progress_apply(
+    polarity_scores = text_series.progress_apply(
         lambda x: TextBlob(x).sentiment.polarity
     )
 
@@ -32,7 +34,7 @@ def add_textblob_polarity(
 
 def add_vader_compound(
         text_series: pd.Series,
-        name: str | None = None
+        name: Union[None, str] = None
     ) -> pd.Series:
     """
     Add VADER compound scores to a text series
@@ -49,8 +51,8 @@ def add_vader_compound(
     """
     object_name = text_series.name if name is None else name
     tqdm.pandas(desc=f"VADER progress for {object_name}")
-    vader: SentimentIntensityAnalyzer = SentimentIntensityAnalyzer()
-    compound_scores: pd.Series = text_series.progress_apply(
+    vader = SentimentIntensityAnalyzer()
+    compound_scores = text_series.progress_apply(
         lambda x: vader.polarity_scores(x)['compound']
     )
 
